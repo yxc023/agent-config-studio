@@ -104,12 +104,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.workspaceConfig
     const skillNames = props.skillsDiscovery?.workspace || []
     if (!cfg?.permission?.skill) {
-      return skillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: false }))
+      return skillNames.map((name) => ({ name, permission: "allow" as SkillPermission, isGlobal: false }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
     return skillNames.map((name) => ({
       name,
-      permission: skillPerms[name] || "deny",
+      permission: skillPerms[name] || "allow",
       isGlobal: false,
     }))
   }
@@ -118,12 +118,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.globalConfig
     const globalSkillNames = props.skillsDiscovery?.global || []
     if (!cfg?.permission?.skill) {
-      return globalSkillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: true }))
+      return globalSkillNames.map((name) => ({ name, permission: "allow" as SkillPermission, isGlobal: true }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
     return globalSkillNames.map((name) => ({
       name,
-      permission: skillPerms[name] || "deny",
+      permission: skillPerms[name] || "allow",
       isGlobal: true,
     }))
   }

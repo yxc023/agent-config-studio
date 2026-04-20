@@ -3,10 +3,5 @@
   "agent": {
     "build": { "disable": true },
     "plan": { "disable": true }
-  },
-  "permission": {
-    "skill": {
-      "*": "deny"
-    }
   }
 }
