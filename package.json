@@ -1,0 +1,42 @@
+{
+  "name": "@opencode-ai/workspace-config-manager",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://opencode.ai",
+  "author": {
+    "name": "OpenCode",
+    "email": "hello@opencode.ai"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package": "electron-builder --config electron-builder.config.ts",
+    "package:mac": "electron-builder --mac --config electron-builder.config.ts",
+    "package:win": "electron-builder --win --config electron-builder.config.ts",
+    "package:linux": "electron-builder --linux --config electron-builder.config.ts"
+  },
+  "main": "./out/main/index.js",
+  "dependencies": {
+    "electron-store": "^10",
+    "electron-log": "^5",
+    "electron-window-state": "^5.0.3",
+    "jsonc-parser": "^3.2.0",
+    "diff": "^7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.12",
+    "@types/diff": "^6",
+    "@types/node": "^22.0.0",
+    "electron-builder": "^26",
+    "electron-vite": "^3.0.0",
+    "solid-js": "^1.9.0",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.0",
+    "vite-plugin-solid": "^2.11.12"
+  },
+  "packageManager": "pnpm@10.28.2+sha1.ca14ef85043bcf001d0ba152c8629d9fac7fb799"
+}
