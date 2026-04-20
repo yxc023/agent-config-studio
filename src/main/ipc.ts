@@ -215,7 +215,11 @@ export function registerIpcHandlers() {
     if (!perm.skill) {
       perm.skill = {}
     }
-    perm.skill[skillPattern] = permission
+    if (permission === "deny") {
+      delete perm.skill[skillPattern]
+    } else {
+      perm.skill[skillPattern] = permission
+    }
     await writeConfig(configPath, config)
     return true
   })
