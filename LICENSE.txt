@@ -4,7 +4,7 @@ Desktop Electron app for managing opencode workspace configurations.
 
 ## License
 
-Copyright (c) 2024. All rights reserved.
+Copyright (c) 2026. All rights reserved.
 
 This project is proprietary software. Unauthorized copying, distribution, or use of this software or any portion thereof is strictly prohibited.
 
