@@ -295,15 +295,23 @@ export default function ConfigViewer(props: Props) {
               </Show>
               <Show when={globalSkills().length > 0}>
                 <div class="config-subgroup">
-                  <div class="config-subgroup-title global-title">Global (Read-only)</div>
+                  <div class="config-subgroup-title global-title">Global</div>
                   <div class="config-items">
                     <For each={globalSkills()}>
                       {(skill) => (
-                        <div class="config-item global-item">
+                        <div class="config-item">
                           <div class="config-item-info">
-                            <div class="config-item-name">🔒 {skill.name}</div>
+                            <div class="config-item-name">{skill.name}</div>
                           </div>
-                          <span class="badge">{skill.permission}</span>
+                          <select
+                            class="permission-select"
+                            value={skill.permission}
+                            onChange={(e) => handleSkillPermissionChange(skill.name, e.currentTarget.value as SkillPermission)}
+                          >
+                            <option value="allow">allow</option>
+                            <option value="ask">ask</option>
+                            <option value="deny">deny</option>
+                          </select>
                         </div>
                       )}
                     </For>
