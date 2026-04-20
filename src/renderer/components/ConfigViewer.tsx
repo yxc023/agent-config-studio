@@ -1,12 +1,14 @@
 import { For, Show, createSignal } from "solid-js"
 import type { Workspace, ConfigData } from "../App"
-import type { SkillPermission, SkillsDiscovery } from "../../preload/types"
+import type { SkillPermission, SkillsDiscovery, AgentsDiscovery, PluginsDiscovery } from "../../preload/types"
 
 interface Props {
   workspace: Workspace
   workspaceConfig: ConfigData | null
   globalConfig: ConfigData | null
   skillsDiscovery: SkillsDiscovery | null
+  agentsDiscovery: AgentsDiscovery | null
+  pluginsDiscovery: PluginsDiscovery | null
   onToggleAgent: (agentName: string, disabled: boolean) => void
   onUpdateSkillPermission: (skillPattern: string, permission: SkillPermission) => void
   onTogglePlugin: (pluginName: string, enabled: boolean) => void
@@ -17,6 +19,7 @@ interface AgentItem {
   name: string
   disabled: boolean
   isGlobal: boolean
+  hasConfig: boolean
 }
 
 interface SkillItem {
@@ -38,35 +41,73 @@ export default function ConfigViewer(props: Props) {
 
   const workspaceAgents = (): AgentItem[] => {
     const cfg = props.workspaceConfig
-    if (!cfg?.agent) return []
-    return Object.entries(cfg.agent)
-      .filter(([key]) => key !== "build" && key !== "plan")
-      .map(([name, agent]) => {
-        const agentData = agent as { disable?: boolean }
-        return { name, disabled: agentData.disable ?? false, isGlobal: false }
+    const agentNames = new Set<string>()
+
+    if (cfg?.agent) {
+      Object.keys(cfg.agent).forEach((name) => {
+        if (name !== "build" && name !== "plan") {
+          agentNames.add(name)
+        }
       })
+    }
+
+    ;(props.agentsDiscovery?.workspace || []).forEach((name) => agentNames.add(name))
+
+    return Array.from(agentNames).sort().map((name) => {
+      const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
+      return {
+        name,
+        disabled: agentData?.disable ?? true,
+        isGlobal: false,
+        hasConfig: !!cfg?.agent?.[name],
+      }
+    })
   }
 
   const globalAgents = (): AgentItem[] => {
     const cfg = props.globalConfig
-    if (!cfg?.agent) return []
-    return Object.entries(cfg.agent)
-      .filter(([key]) => key !== "build" && key !== "plan")
-      .filter(([name]) => !props.workspaceConfig?.agent?.[name])
-      .map(([name, agent]) => {
-        const agentData = agent as { disable?: boolean }
-        return { name, disabled: agentData.disable ?? false, isGlobal: true }
+    const wsAgentNames = new Set<string>()
+
+    if (props.workspaceConfig?.agent) {
+      Object.keys(props.workspaceConfig.agent).forEach((name) => wsAgentNames.add(name))
+    }
+    ;(props.agentsDiscovery?.workspace || []).forEach((name) => wsAgentNames.add(name))
+
+    const agentNames = new Set<string>()
+
+    if (cfg?.agent) {
+      Object.keys(cfg.agent).forEach((name) => {
+        if (name !== "build" && name !== "plan" && !wsAgentNames.has(name)) {
+          agentNames.add(name)
+        }
       })
+    }
+
+    ;(props.agentsDiscovery?.global || []).forEach((name) => {
+      if (!wsAgentNames.has(name)) {
+        agentNames.add(name)
+      }
+    })
+
+    return Array.from(agentNames).sort().map((name) => {
+      const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
+      return {
+        name,
+        disabled: agentData?.disable ?? true,
+        isGlobal: true,
+        hasConfig: !!cfg?.agent?.[name],
+      }
+    })
   }
 
   const workspaceSkills = (): SkillItem[] => {
     const cfg = props.workspaceConfig
-    const wsSkillNames = props.skillsDiscovery?.workspace || []
+    const skillNames = props.skillsDiscovery?.workspace || []
     if (!cfg?.permission?.skill) {
-      return wsSkillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: false }))
+      return skillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: false }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
-    return wsSkillNames.map((name) => ({
+    return skillNames.map((name) => ({
       name,
       permission: skillPerms[name] || "deny",
       isGlobal: false,
@@ -89,15 +130,43 @@ export default function ConfigViewer(props: Props) {
 
   const workspacePlugins = (): PluginItem[] => {
     const cfg = props.workspaceConfig
-    const plugins = cfg?.plugin || []
-    return plugins.map((name) => ({ name, enabled: true, isGlobal: false }))
+    const pluginNames = new Set<string>()
+
+    ;(cfg?.plugin || []).forEach((name) => pluginNames.add(name))
+    ;(props.pluginsDiscovery?.workspace || []).forEach((name) => pluginNames.add(name))
+
+    return Array.from(pluginNames).sort().map((name) => ({
+      name,
+      enabled: (cfg?.plugin || []).includes(name),
+      isGlobal: false,
+    }))
   }
 
   const globalPlugins = (): PluginItem[] => {
     const cfg = props.globalConfig
-    const wsPlugins = props.workspaceConfig?.plugin || []
-    const globalPluginNames = (cfg?.plugin || []).filter((p) => !wsPlugins.includes(p))
-    return globalPluginNames.map((name) => ({ name, enabled: true, isGlobal: true }))
+    const wsPluginNames = new Set<string>()
+
+    ;(props.workspaceConfig?.plugin || []).forEach((name) => wsPluginNames.add(name))
+    ;(props.pluginsDiscovery?.workspace || []).forEach((name) => wsPluginNames.add(name))
+
+    const pluginNames = new Set<string>()
+
+    ;(cfg?.plugin || []).forEach((name) => {
+      if (!wsPluginNames.has(name)) {
+        pluginNames.add(name)
+      }
+    })
+    ;(props.pluginsDiscovery?.global || []).forEach((name) => {
+      if (!wsPluginNames.has(name)) {
+        pluginNames.add(name)
+      }
+    })
+
+    return Array.from(pluginNames).sort().map((name) => ({
+      name,
+      enabled: (cfg?.plugin || []).includes(name),
+      isGlobal: true,
+    }))
   }
 
   const handleAgentToggle = (name: string, disabled: boolean) => {
@@ -152,14 +221,16 @@ export default function ConfigViewer(props: Props) {
                           <div class="config-item-info">
                             <div class="config-item-name">{agent.name}</div>
                           </div>
-                          <label class="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={!agent.disabled}
-                              onChange={(e) => handleAgentToggle(agent.name, !e.currentTarget.checked)}
-                            />
-                            <span class="toggle-slider"></span>
-                          </label>
+                          <Show when={agent.hasConfig} fallback={<span class="badge">undiscovered</span>}>
+                            <label class="toggle-switch">
+                              <input
+                                type="checkbox"
+                                checked={!agent.disabled}
+                                onChange={(e) => handleAgentToggle(agent.name, !e.currentTarget.checked)}
+                              />
+                              <span class="toggle-slider"></span>
+                            </label>
+                          </Show>
                         </div>
                       )}
                     </For>
@@ -176,7 +247,9 @@ export default function ConfigViewer(props: Props) {
                           <div class="config-item-info">
                             <div class="config-item-name">🔒 {agent.name}</div>
                           </div>
-                          <span class="badge">{agent.disabled ? "disabled" : "enabled"}</span>
+                          <Show when={agent.hasConfig} fallback={<span class="badge">no config</span>}>
+                            <span class="badge">{agent.disabled ? "disabled" : "enabled"}</span>
+                          </Show>
                         </div>
                       )}
                     </For>
@@ -259,14 +332,25 @@ export default function ConfigViewer(props: Props) {
                           <div class="config-item-info">
                             <div class="config-item-name">{plugin.name}</div>
                           </div>
-                          <label class="toggle-switch">
-                            <input
-                              type="checkbox"
-                              checked={plugin.enabled}
-                              onChange={(e) => handlePluginToggle(plugin.name, e.currentTarget.checked)}
-                            />
-                            <span class="toggle-slider"></span>
-                          </label>
+                          <Show when={plugin.enabled} fallback={
+                            <label class="toggle-switch">
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={() => handlePluginToggle(plugin.name, true)}
+                              />
+                              <span class="toggle-slider"></span>
+                            </label>
+                          }>
+                            <label class="toggle-switch">
+                              <input
+                                type="checkbox"
+                                checked={true}
+                                onChange={() => handlePluginToggle(plugin.name, false)}
+                              />
+                              <span class="toggle-slider"></span>
+                            </label>
+                          </Show>
                         </div>
                       )}
                     </For>
@@ -283,7 +367,7 @@ export default function ConfigViewer(props: Props) {
                           <div class="config-item-info">
                             <div class="config-item-name">🔒 {plugin.name}</div>
                           </div>
-                          <span class="badge">enabled</span>
+                          <span class="badge">{plugin.enabled ? "enabled" : "disabled"}</span>
                         </div>
                       )}
                     </For>

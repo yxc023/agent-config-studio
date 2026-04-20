@@ -15,3 +15,7 @@ export const GLOBAL_CONFIG_DIR = join(homedir(), ".config", "opencode")
 export const GLOBAL_CONFIG_FILE = "opencode.jsonc"
 
 export const SKILL_SEARCH_DIRS = [".opencode/skills", ".claude/skills", ".agents/skills"]
+
+export const AGENT_SEARCH_DIRS = [".opencode/agents", ".claude/agents", ".agents/agents"]
+
+export const PLUGIN_SEARCH_DIRS = [".opencode/plugins", ".claude/plugins", ".agents/plugins"]

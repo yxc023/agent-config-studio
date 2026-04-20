@@ -29,6 +29,16 @@ export interface SkillsDiscovery {
   global: string[]
 }
 
+export interface AgentsDiscovery {
+  workspace: string[]
+  global: string[]
+}
+
+export interface PluginsDiscovery {
+  workspace: string[]
+  global: string[]
+}
+
 export type SkillPermission = "allow" | "ask" | "deny"
 
 export interface ElectronAPI {
@@ -44,6 +54,8 @@ export interface ElectronAPI {
 
   globalConfigRead: () => Promise<ConfigData | null>
   skillsDiscover: (workspacePath: string) => Promise<SkillsDiscovery>
+  agentsDiscover: (workspacePath: string) => Promise<AgentsDiscovery>
+  pluginsDiscover: (workspacePath: string) => Promise<PluginsDiscovery>
   workspaceInitialize: (workspacePath: string) => Promise<{ configPath: string; config: ConfigData }>
 
   configToggleAgent: (configPath: string, agentName: string, disabled: boolean) => Promise<boolean>

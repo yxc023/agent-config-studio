@@ -17,6 +17,8 @@ import {
   copyConfigToProfile,
   readGlobalConfig,
   discoverSkills,
+  discoverAgents,
+  discoverPlugins,
   type Workspace,
   type Profile,
   type ConfigData,
@@ -153,6 +155,24 @@ export function registerIpcHandlers() {
     return {
       workspace: workspaceSkills,
       global: globalSkills.filter((s) => !workspaceSkills.includes(s)),
+    }
+  })
+
+  ipcMain.handle("agents-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
+    const workspaceAgents = await discoverAgents(workspacePath)
+    const globalAgents = await discoverAgents(GLOBAL_CONFIG_DIR)
+    return {
+      workspace: workspaceAgents,
+      global: globalAgents.filter((a) => !workspaceAgents.includes(a)),
+    }
+  })
+
+  ipcMain.handle("plugins-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
+    const workspacePlugins = await discoverPlugins(workspacePath)
+    const globalPlugins = await discoverPlugins(GLOBAL_CONFIG_DIR)
+    return {
+      workspace: workspacePlugins,
+      global: globalPlugins.filter((p) => !workspacePlugins.includes(p)),
     }
   })
 

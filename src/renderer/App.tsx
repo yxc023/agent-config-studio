@@ -3,7 +3,7 @@ import WorkspaceList from "./components/WorkspaceList"
 import ProfileList from "./components/ProfileList"
 import ConfigViewer from "./components/ConfigViewer"
 import DiffModal from "./components/DiffModal"
-import type { SkillPermission, SkillsDiscovery } from "../preload/types"
+import type { SkillPermission, SkillsDiscovery, AgentsDiscovery, PluginsDiscovery } from "../preload/types"
 
 export interface Workspace {
   id: string
@@ -43,6 +43,8 @@ function App() {
   const [workspaceConfig, setWorkspaceConfig] = createSignal<ConfigData | null>(null)
   const [globalConfig, setGlobalConfig] = createSignal<ConfigData | null>(null)
   const [skillsDiscovery, setSkillsDiscovery] = createSignal<SkillsDiscovery | null>(null)
+  const [agentsDiscovery, setAgentsDiscovery] = createSignal<AgentsDiscovery | null>(null)
+  const [pluginsDiscovery, setPluginsDiscovery] = createSignal<PluginsDiscovery | null>(null)
   const [showDiffModal, setShowDiffModal] = createSignal(false)
   const [diffPreview, setDiffPreview] = createSignal<MergePreview | null>(null)
   const [error, setError] = createSignal<string | null>(null)
@@ -67,8 +69,14 @@ function App() {
     }
     const global = await window.api.globalConfigRead()
     setGlobalConfig(global)
-    const skills = await window.api.skillsDiscover(workspace.path)
+    const [skills, agents, plugins] = await Promise.all([
+      window.api.skillsDiscover(workspace.path),
+      window.api.agentsDiscover(workspace.path),
+      window.api.pluginsDiscover(workspace.path),
+    ])
     setSkillsDiscovery(skills)
+    setAgentsDiscovery(agents)
+    setPluginsDiscovery(plugins)
   }
 
   async function handleAddWorkspace() {
@@ -97,6 +105,8 @@ function App() {
       setWorkspaceConfig(null)
       setGlobalConfig(null)
       setSkillsDiscovery(null)
+      setAgentsDiscovery(null)
+      setPluginsDiscovery(null)
     }
     await loadWorkspaces()
   }
@@ -293,6 +303,8 @@ function App() {
               workspaceConfig={workspaceConfig()}
               globalConfig={globalConfig()}
               skillsDiscovery={skillsDiscovery()}
+              agentsDiscovery={agentsDiscovery()}
+              pluginsDiscovery={pluginsDiscovery()}
               onToggleAgent={handleToggleAgent}
               onUpdateSkillPermission={handleUpdateSkillPermission}
               onTogglePlugin={handleTogglePlugin}

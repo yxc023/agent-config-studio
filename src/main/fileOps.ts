@@ -2,7 +2,7 @@ import { readFile, writeFile, readdir, mkdir, rm, rename, copyFile, access } fro
 import { join, basename } from "node:path"
 import { parse as parseJsonc, printParseErrorCode, type ParseError } from "jsonc-parser"
 import { editJsonc } from "./jsonc"
-import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS } from "./constants"
+import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS } from "./constants"
 
 export interface Workspace {
   id: string
@@ -125,24 +125,70 @@ export async function readGlobalConfig(): Promise<ConfigData | null> {
   }
 }
 
-export async function discoverSkills(workspacePath: string): Promise<string[]> {
+export async function discoverSkills(basePath: string): Promise<string[]> {
   const skills: Set<string> = new Set()
-  const gitRoot = await findGitRoot(workspacePath)
-  if (!gitRoot) return []
 
   for (const skillDir of SKILL_SEARCH_DIRS) {
-    const fullPath = join(gitRoot, skillDir)
+    const fullPath = join(basePath, skillDir)
+    await scanForSkills(fullPath, skills)
+  }
+
+  return Array.from(skills).sort()
+}
+
+async function scanForSkills(dirPath: string, skills: Set<string>): Promise<void> {
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const skillPath = join(dirPath, entry.name, "SKILL.md")
+        try {
+          await access(skillPath)
+          skills.add(entry.name)
+        } catch {
+          // SKILL.md not found in this directory
+        }
+      }
+    }
+  } catch {
+    // Directory doesn't exist, skip
+  }
+}
+
+export async function discoverAgents(basePath: string): Promise<string[]> {
+  const agents: Set<string> = new Set()
+
+  for (const agentDir of AGENT_SEARCH_DIRS) {
+    const fullPath = join(basePath, agentDir)
+    await scanForAgents(fullPath, agents)
+  }
+
+  return Array.from(agents).sort()
+}
+
+async function scanForAgents(dirPath: string, agents: Set<string>): Promise<void> {
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith(".md")) {
+        agents.add(entry.name.replace(/\.md$/, ""))
+      }
+    }
+  } catch {
+    // Directory doesn't exist, skip
+  }
+}
+
+export async function discoverPlugins(basePath: string): Promise<string[]> {
+  const plugins: Set<string> = new Set()
+
+  for (const pluginDir of PLUGIN_SEARCH_DIRS) {
+    const fullPath = join(basePath, pluginDir)
     try {
       const entries = await readdir(fullPath, { withFileTypes: true })
       for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const skillPath = join(fullPath, entry.name, "SKILL.md")
-          try {
-            await access(skillPath)
-            skills.add(entry.name)
-          } catch {
-            // SKILL.md not found in this directory
-          }
+        if (entry.isFile() && (entry.name.endsWith(".js") || entry.name.endsWith(".ts"))) {
+          plugins.add(entry.name.replace(/\.(js|ts)$/, ""))
         }
       }
     } catch {
@@ -150,20 +196,5 @@ export async function discoverSkills(workspacePath: string): Promise<string[]> {
     }
   }
 
-  return Array.from(skills).sort()
-}
-
-async function findGitRoot(dirPath: string): Promise<string | null> {
-  let current = dirPath
-  while (current !== "/") {
-    try {
-      await access(join(current, ".git"))
-      return current
-    } catch {
-      const parent = dirname(current)
-      if (parent === current) break
-      current = parent
-    }
-  }
-  return null
+  return Array.from(plugins).sort()
 }
