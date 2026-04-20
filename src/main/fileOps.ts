@@ -125,6 +125,12 @@ export async function readGlobalConfig(): Promise<ConfigData | null> {
   }
 }
 
+export async function writeGlobalConfig(data: ConfigData): Promise<void> {
+  const configPath = getGlobalConfigPath()
+  await mkdir(dirname(configPath), { recursive: true })
+  await writeConfig(configPath, data)
+}
+
 export async function discoverSkills(basePath: string, skillDirs?: string[]): Promise<string[]> {
   const skills: Set<string> = new Set()
   const dirsToScan = skillDirs || SKILL_SEARCH_DIRS.map((d) => join(basePath, d))

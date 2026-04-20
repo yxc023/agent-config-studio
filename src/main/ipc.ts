@@ -16,6 +16,7 @@ import {
   renameProfile,
   copyConfigToProfile,
   readGlobalConfig,
+  writeGlobalConfig,
   discoverSkills,
   discoverGlobalSkills,
   discoverAgents,
@@ -236,6 +237,52 @@ export function registerIpcHandlers() {
       config.plugin.splice(index, 1)
     }
     await writeConfig(configPath, config)
+    return true
+  })
+
+  ipcMain.handle("global-config-toggle-agent", async (_event: IpcMainInvokeEvent, agentName: string, disabled: boolean) => {
+    const config = await readGlobalConfig() || {}
+    if (!config.agent) {
+      config.agent = {}
+    }
+    if (!config.agent[agentName]) {
+      config.agent[agentName] = {}
+    }
+    ;(config.agent[agentName] as Record<string, unknown>).disable = disabled
+    await writeGlobalConfig(config)
+    return true
+  })
+
+  ipcMain.handle("global-config-update-skill-permission", async (_event: IpcMainInvokeEvent, skillPattern: string, permission: "allow" | "ask" | "deny") => {
+    const config = await readGlobalConfig() || {}
+    if (!config.permission) {
+      config.permission = {}
+    }
+    const perm = config.permission as Record<string, Record<string, unknown>>
+    if (!perm.skill) {
+      perm.skill = {}
+    }
+    if (permission === "deny") {
+      delete perm.skill[skillPattern]
+    } else {
+      perm.skill[skillPattern] = permission
+    }
+    await writeGlobalConfig(config)
+    return true
+  })
+
+  ipcMain.handle("global-config-toggle-plugin", async (_event: IpcMainInvokeEvent, pluginName: string, enabled: boolean) => {
+    const config = await readGlobalConfig() || {}
+    if (!config.plugin) {
+      config.plugin = []
+    }
+    const index = config.plugin.indexOf(pluginName)
+    if (enabled && index === -1) {
+      config.plugin.push(pluginName)
+    } else if (!enabled && index !== -1) {
+      config.plugin.splice(index, 1)
+    }
+    await writeGlobalConfig(config)
     return true
   })
 }

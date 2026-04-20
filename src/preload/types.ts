@@ -62,6 +62,10 @@ export interface ElectronAPI {
   configUpdateSkillPermission: (configPath: string, skillPattern: string, permission: SkillPermission) => Promise<boolean>
   configTogglePlugin: (configPath: string, pluginName: string, enabled: boolean) => Promise<boolean>
 
+  globalConfigToggleAgent: (agentName: string, disabled: boolean) => Promise<boolean>
+  globalConfigUpdateSkillPermission: (skillPattern: string, permission: SkillPermission) => Promise<boolean>
+  globalConfigTogglePlugin: (pluginName: string, enabled: boolean) => Promise<boolean>
+
   profileList: () => Promise<Profile[]>
   profileCreateFromWorkspace: (workspaceConfigPath: string, profileName: string) => Promise<Profile>
   profileCreateBlank: (profileName: string) => Promise<Profile>

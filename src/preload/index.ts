@@ -27,6 +27,13 @@ const api: ElectronAPI = {
   configTogglePlugin: (configPath: string, pluginName: string, enabled: boolean) =>
     ipcRenderer.invoke("config-toggle-plugin", configPath, pluginName, enabled),
 
+  globalConfigToggleAgent: (agentName: string, disabled: boolean) =>
+    ipcRenderer.invoke("global-config-toggle-agent", agentName, disabled),
+  globalConfigUpdateSkillPermission: (skillPattern: string, permission) =>
+    ipcRenderer.invoke("global-config-update-skill-permission", skillPattern, permission),
+  globalConfigTogglePlugin: (pluginName: string, enabled: boolean) =>
+    ipcRenderer.invoke("global-config-toggle-plugin", pluginName, enabled),
+
   profileList: () => ipcRenderer.invoke("profile-list"),
   profileCreateFromWorkspace: (workspaceConfigPath: string, profileName: string) =>
     ipcRenderer.invoke("profile-create-from-workspace", workspaceConfigPath, profileName),

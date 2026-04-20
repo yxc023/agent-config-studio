@@ -18,6 +18,8 @@ export function createMainWindow() {
     y: state.y,
     width: state.width,
     height: state.height,
+    minWidth: 900,
+    minHeight: 600,
     show: false,
     title: APP_NAME,
     backgroundColor: "#1e1e1e",

@@ -1,7 +1,9 @@
-import { createSignal, onMount, Show } from "solid-js"
+import { createSignal, onMount, Show, For } from "solid-js"
 import WorkspaceList from "./components/WorkspaceList"
 import ProfileList from "./components/ProfileList"
-import ConfigViewer from "./components/ConfigViewer"
+import TabBar, { type TabType } from "./components/TabBar"
+import CardGrid from "./components/CardGrid"
+import TitleBar from "./components/TitleBar"
 import DiffModal from "./components/DiffModal"
 import type { SkillPermission, SkillsDiscovery, AgentsDiscovery, PluginsDiscovery } from "../preload/types"
 
@@ -49,6 +51,134 @@ function App() {
   const [diffPreview, setDiffPreview] = createSignal<MergePreview | null>(null)
   const [error, setError] = createSignal<string | null>(null)
   const [toast, setToast] = createSignal<string | null>(null)
+  const [activeTab, setActiveTab] = createSignal<TabType>("agents")
+
+  const cardAgents = () => {
+    const cfg = workspaceConfig()
+    const wsAgentNames = new Set<string>()
+
+    if (cfg?.agent) {
+      Object.keys(cfg.agent).forEach((name) => {
+        if (name !== "build" && name !== "plan") {
+          wsAgentNames.add(name)
+        }
+      })
+    }
+    ;(agentsDiscovery()?.workspace || []).forEach((name) => wsAgentNames.add(name))
+
+    const globalCfg = globalConfig()
+    const wsConfigAgentNames = new Set<string>()
+    if (cfg?.agent) {
+      Object.keys(cfg.agent).forEach((name) => wsConfigAgentNames.add(name))
+    }
+    ;(agentsDiscovery()?.workspace || []).forEach((name) => wsConfigAgentNames.add(name))
+
+    const workspaceAgents = Array.from(wsAgentNames).sort().map((name) => {
+      const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
+      return {
+        name,
+        enabled: agentData?.disable !== true,
+        isGlobal: false,
+      }
+    })
+
+    const globalAgentNames = new Set<string>()
+    if (globalCfg?.agent) {
+      Object.keys(globalCfg.agent).forEach((name) => {
+        if (name !== "build" && name !== "plan" && !wsConfigAgentNames.has(name)) {
+          globalAgentNames.add(name)
+        }
+      })
+    }
+    ;(agentsDiscovery()?.global || []).forEach((name) => {
+      if (!wsConfigAgentNames.has(name)) {
+        globalAgentNames.add(name)
+      }
+    })
+
+    const globalAgents = Array.from(globalAgentNames).sort().map((name) => {
+      const agentData = globalCfg?.agent?.[name] as { disable?: boolean } | undefined
+      return {
+        name,
+        enabled: agentData?.disable !== true,
+        isGlobal: true,
+      }
+    })
+
+    return [...workspaceAgents, ...globalAgents]
+  }
+
+  const cardSkills = () => {
+    const cfg = workspaceConfig()
+    const skillPerms = cfg?.permission?.skill as Record<string, SkillPermission> | undefined
+    const globalCfg = globalConfig()
+    const globalSkillPerms = globalCfg?.permission?.skill as Record<string, SkillPermission> | undefined
+
+    const wsConfigSkillNames = new Set<string>()
+    ;(skillsDiscovery()?.workspace || []).forEach((name) => wsConfigSkillNames.add(name))
+    ;(skillsDiscovery()?.global || []).forEach((name) => wsConfigSkillNames.add(name))
+
+    const workspaceSkills = (skillsDiscovery()?.workspace || []).map((name) => {
+      const perm = skillPerms?.[name] || "deny"
+      return {
+        name,
+        permission: perm === "ask" ? "allow" : perm,
+        ask: perm === "ask",
+        isGlobal: false,
+      }
+    })
+
+    const globalSkills = (skillsDiscovery()?.global || []).map((name) => {
+      const perm = globalSkillPerms?.[name] || "deny"
+      return {
+        name,
+        permission: perm === "ask" ? "allow" : perm,
+        ask: perm === "ask",
+        isGlobal: true,
+      }
+    })
+
+    return [...workspaceSkills, ...globalSkills]
+  }
+
+  const cardPlugins = () => {
+    const cfg = workspaceConfig()
+    const wsPluginNames = new Set<string>()
+    const enabledPlugins = new Set(cfg?.plugin || [])
+
+    ;(pluginsDiscovery()?.workspace || []).forEach((name) => wsPluginNames.add(name))
+
+    const globalCfg = globalConfig()
+    const wsConfigPluginNames = new Set<string>()
+    ;(cfg?.plugin || []).forEach((name) => wsConfigPluginNames.add(name))
+    ;(pluginsDiscovery()?.workspace || []).forEach((name) => wsConfigPluginNames.add(name))
+
+    const workspacePlugins = Array.from(wsPluginNames).sort().map((name) => ({
+      name,
+      enabled: enabledPlugins.has(name),
+      isGlobal: false,
+    }))
+
+    const globalPluginNames = new Set<string>()
+    ;(globalCfg?.plugin || []).forEach((name) => {
+      if (!wsConfigPluginNames.has(name)) {
+        globalPluginNames.add(name)
+      }
+    })
+    ;(pluginsDiscovery()?.global || []).forEach((name) => {
+      if (!wsConfigPluginNames.has(name)) {
+        globalPluginNames.add(name)
+      }
+    })
+
+    const globalPlugins = Array.from(globalPluginNames).sort().map((name) => ({
+      name,
+      enabled: (globalCfg?.plugin || []).includes(name),
+      isGlobal: true,
+    }))
+
+    return [...workspacePlugins, ...globalPlugins]
+  }
 
   async function loadWorkspaces() {
     const list = await window.api.workspaceList()
@@ -117,32 +247,45 @@ function App() {
     await loadWorkspaceData(workspace)
   }
 
-  async function handleToggleAgent(agentName: string, disabled: boolean) {
+  async function handleToggleAgent(agentName: string, enabled: boolean, isGlobal: boolean) {
     const ws = selectedWorkspace()
-    if (!ws?.configPath) return
     try {
-      await window.api.configToggleAgent(ws.configPath, agentName, disabled)
-      await loadWorkspaceConfig(ws)
-      setToast("Config saved")
-      setTimeout(() => setToast(null), 2000)
+      if (isGlobal) {
+        await window.api.globalConfigToggleAgent(agentName, !enabled)
+        const global = await window.api.globalConfigRead()
+        setGlobalConfig(global)
+      } else {
+        if (!ws?.configPath) return
+        await window.api.configToggleAgent(ws.configPath, agentName, !enabled)
+        await loadWorkspaceConfig(ws)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to toggle agent")
       setTimeout(() => setError(null), 3000)
     }
   }
 
-  async function handleUpdateSkillPermission(skillPattern: string, permission: SkillPermission) {
+  async function handleUpdateSkillPermission(skillPattern: string, permission: SkillPermission, isGlobal: boolean) {
     const ws = selectedWorkspace()
-    if (!ws?.configPath) return
     try {
-      await window.api.configUpdateSkillPermission(ws.configPath, skillPattern, permission)
-      await loadWorkspaceConfig(ws)
-      setToast("Config saved")
-      setTimeout(() => setToast(null), 2000)
+      if (isGlobal) {
+        await window.api.globalConfigUpdateSkillPermission(skillPattern, permission)
+        const global = await window.api.globalConfigRead()
+        setGlobalConfig(global)
+      } else {
+        if (!ws?.configPath) return
+        await window.api.configUpdateSkillPermission(ws.configPath, skillPattern, permission)
+        await loadWorkspaceConfig(ws)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update skill permission")
       setTimeout(() => setError(null), 3000)
     }
+  }
+
+  async function handleSkillAskChange(skillName: string, ask: boolean, isGlobal: boolean) {
+    const permission: SkillPermission = ask ? "ask" : "allow"
+    await handleUpdateSkillPermission(skillName, permission, isGlobal)
   }
 
   async function handleDenyAllSkills(skillNames: string[]) {
@@ -153,22 +296,24 @@ function App() {
         await window.api.configUpdateSkillPermission(ws.configPath, name, "deny")
       }
       await loadWorkspaceConfig(ws)
-      setToast("Config saved")
-      setTimeout(() => setToast(null), 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to deny all skills")
       setTimeout(() => setError(null), 3000)
     }
   }
 
-  async function handleTogglePlugin(pluginName: string, enabled: boolean) {
+  async function handleTogglePlugin(pluginName: string, enabled: boolean, isGlobal: boolean) {
     const ws = selectedWorkspace()
-    if (!ws?.configPath) return
     try {
-      await window.api.configTogglePlugin(ws.configPath, pluginName, enabled)
-      await loadWorkspaceConfig(ws)
-      setToast("Config saved")
-      setTimeout(() => setToast(null), 2000)
+      if (isGlobal) {
+        await window.api.globalConfigTogglePlugin(pluginName, enabled)
+        const global = await window.api.globalConfigRead()
+        setGlobalConfig(global)
+      } else {
+        if (!ws?.configPath) return
+        await window.api.configTogglePlugin(ws.configPath, pluginName, enabled)
+        await loadWorkspaceConfig(ws)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to toggle plugin")
       setTimeout(() => setError(null), 3000)
@@ -274,39 +419,41 @@ function App() {
   })
 
   return (
-    <div id="root">
-      <div class="app">
-        <aside class="sidebar">
-          <div class="sidebar-header">
-            <button class="button button-primary button-small" onClick={handleAddWorkspace}>
-              + Add
+    <div id="root" class="h-screen flex flex-col bg-[#f5f5f7] text-[#1d1d1f]">
+      <TitleBar />
+      <div class="flex-1 flex overflow-hidden">
+        <aside class="w-56 bg-white border-r border-[#e5e5e5] flex flex-col">
+          <div class="p-4 border-b border-[#f0f0f0]">
+            <button
+              class="w-full px-4 py-2.5 bg-[#0071e3] text-white text-sm font-medium rounded-lg hover:bg-[#0077ed] transition-colors"
+              onClick={handleAddWorkspace}
+            >
+              + Add Workspace
             </button>
           </div>
-          <div class="sidebar-content">
-            <div class="sidebar-section">
-              <div class="sidebar-section-title">Workspaces</div>
-              <WorkspaceList
-                workspaces={workspaces()}
-                selected={selectedWorkspace()}
-                onSelect={handleSelectWorkspace}
-                onRemove={handleRemoveWorkspace}
-              />
-            </div>
-            <div class="sidebar-section">
-              <div class="sidebar-section-title">Profiles</div>
-              <ProfileList
-                profiles={profiles()}
-                selected={selectedProfile()}
-                onSelect={handleSelectProfile}
-                onDelete={handleDeleteProfile}
-                onCreateFromWorkspace={handleCreateProfileFromWorkspace}
-                onCreateBlank={handleCreateBlankProfile}
-                hasSelectedWorkspace={!!selectedWorkspace()}
-              />
-            </div>
+          <div class="flex-1 overflow-y-auto p-3">
+            <div class="text-xs font-semibold text-[#86868b] uppercase tracking-wider px-3 py-2">Workspaces</div>
+            <For each={workspaces()}>
+              {(workspace) => (
+                <button
+                  class={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center gap-3 mt-1 transition-colors ${
+                    selectedWorkspace()?.id === workspace.id
+                      ? "bg-[#f5f5f7]"
+                      : "hover:bg-[#f5f5f7]"
+                  }`}
+                  onClick={() => handleSelectWorkspace(workspace)}
+                >
+                  <span class="text-[#86868b]">📁</span>
+                  <span class="font-medium truncate">{workspace.name}</span>
+                </button>
+              )}
+            </For>
+            <Show when={workspaces().length === 0}>
+              <div class="text-sm text-[#86868b] px-3 py-2">No workspaces added</div>
+            </Show>
           </div>
         </aside>
-        <main class="main-content">
+        <main class="flex-1 flex flex-col overflow-hidden" style={{ "min-width": "600px" }}>
           <Show when={error()}>
             <div class="error-banner">{error()}</div>
           </Show>
@@ -314,25 +461,23 @@ function App() {
             <div class="toast-banner">{toast()}</div>
           </Show>
           <Show when={selectedWorkspace()}>
-            <ConfigViewer
-              workspace={selectedWorkspace()!}
-              workspaceConfig={workspaceConfig()}
-              globalConfig={globalConfig()}
-              skillsDiscovery={skillsDiscovery()}
-              agentsDiscovery={agentsDiscovery()}
-              pluginsDiscovery={pluginsDiscovery()}
+            <TabBar activeTab={activeTab()} onChange={setActiveTab} />
+            <CardGrid
+              activeTab={activeTab()}
+              agents={cardAgents()}
+              skills={cardSkills()}
+              plugins={cardPlugins()}
               onToggleAgent={handleToggleAgent}
-              onUpdateSkillPermission={handleUpdateSkillPermission}
-              onDenyAllSkills={handleDenyAllSkills}
+              onUpdateSkillPermission={(name, perm, isGlobal) => handleUpdateSkillPermission(name, perm, isGlobal)}
+              onAskChange={(name, ask, isGlobal) => handleSkillAskChange(name, ask, isGlobal)}
               onTogglePlugin={handleTogglePlugin}
-              onOpenInEditor={handleOpenInEditor}
             />
           </Show>
           <Show when={!selectedWorkspace()}>
-            <div class="empty-state">
-              <div class="empty-state-icon">📁</div>
-              <div class="empty-state-title">No workspace selected</div>
-              <div class="empty-state-desc">Add a workspace to get started, or select one from the sidebar.</div>
+            <div class="flex flex-col items-center justify-center h-full text-center p-8">
+              <div class="text-5xl mb-4 opacity-50">📁</div>
+              <div class="text-lg font-semibold mb-2">No workspace selected</div>
+              <div class="text-sm text-[#86868b] max-w-xs">Add a workspace to get started, or select one from the sidebar.</div>
             </div>
           </Show>
         </main>
