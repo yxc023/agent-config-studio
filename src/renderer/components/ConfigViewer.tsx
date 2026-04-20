@@ -57,7 +57,7 @@ export default function ConfigViewer(props: Props) {
       const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
       return {
         name,
-        disabled: agentData?.disable ?? true,
+        disabled: agentData?.disable === true,
         isGlobal: false,
         hasConfig: !!cfg?.agent?.[name],
       }
@@ -93,7 +93,7 @@ export default function ConfigViewer(props: Props) {
       const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
       return {
         name,
-        disabled: agentData?.disable ?? true,
+        disabled: agentData?.disable === true,
         isGlobal: true,
         hasConfig: !!cfg?.agent?.[name],
       }
@@ -221,16 +221,14 @@ export default function ConfigViewer(props: Props) {
                           <div class="config-item-info">
                             <div class="config-item-name">{agent.name}</div>
                           </div>
-                          <Show when={agent.hasConfig} fallback={<span class="badge">undiscovered</span>}>
-                            <label class="toggle-switch">
-                              <input
-                                type="checkbox"
-                                checked={!agent.disabled}
-                                onChange={(e) => handleAgentToggle(agent.name, !e.currentTarget.checked)}
-                              />
-                              <span class="toggle-slider"></span>
-                            </label>
-                          </Show>
+                          <label class="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={!agent.disabled}
+                              onChange={(e) => handleAgentToggle(agent.name, !e.currentTarget.checked)}
+                            />
+                            <span class="toggle-slider"></span>
+                          </label>
                         </div>
                       )}
                     </For>
@@ -239,17 +237,22 @@ export default function ConfigViewer(props: Props) {
               </Show>
               <Show when={globalAgents().length > 0}>
                 <div class="config-subgroup">
-                  <div class="config-subgroup-title global-title">Global (Read-only)</div>
+                  <div class="config-subgroup-title global-title">Global</div>
                   <div class="config-items">
                     <For each={globalAgents()}>
                       {(agent) => (
-                        <div class="config-item global-item">
+                        <div class="config-item">
                           <div class="config-item-info">
-                            <div class="config-item-name">🔒 {agent.name}</div>
+                            <div class="config-item-name">{agent.name}</div>
                           </div>
-                          <Show when={agent.hasConfig} fallback={<span class="badge">no config</span>}>
-                            <span class="badge">{agent.disabled ? "disabled" : "enabled"}</span>
-                          </Show>
+                          <label class="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={!agent.disabled}
+                              onChange={(e) => handleAgentToggle(agent.name, !e.currentTarget.checked)}
+                            />
+                            <span class="toggle-slider"></span>
+                          </label>
                         </div>
                       )}
                     </For>
