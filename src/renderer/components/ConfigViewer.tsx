@@ -11,6 +11,7 @@ interface Props {
   pluginsDiscovery: PluginsDiscovery | null
   onToggleAgent: (agentName: string, disabled: boolean) => void
   onUpdateSkillPermission: (skillPattern: string, permission: SkillPermission) => void
+  onDenyAllSkills: (skillNames: string[]) => void
   onTogglePlugin: (pluginName: string, enabled: boolean) => void
   onOpenInEditor: (path: string) => void
 }
@@ -104,12 +105,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.workspaceConfig
     const skillNames = props.skillsDiscovery?.workspace || []
     if (!cfg?.permission?.skill) {
-      return skillNames.map((name) => ({ name, permission: "allow" as SkillPermission, isGlobal: false }))
+      return skillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: false }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
     return skillNames.map((name) => ({
       name,
-      permission: skillPerms[name] || "allow",
+      permission: skillPerms[name] || "deny",
       isGlobal: false,
     }))
   }
@@ -118,12 +119,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.globalConfig
     const globalSkillNames = props.skillsDiscovery?.global || []
     if (!cfg?.permission?.skill) {
-      return globalSkillNames.map((name) => ({ name, permission: "allow" as SkillPermission, isGlobal: true }))
+      return globalSkillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: true }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
     return globalSkillNames.map((name) => ({
       name,
-      permission: skillPerms[name] || "allow",
+      permission: skillPerms[name] || "deny",
       isGlobal: true,
     }))
   }
@@ -179,6 +180,14 @@ export default function ConfigViewer(props: Props) {
     if (props.workspace.configPath) {
       props.onUpdateSkillPermission(name, permission)
     }
+  }
+
+  const handleDenyAllSkills = () => {
+    const allSkillNames = [
+      ...workspaceSkills().map((s) => s.name),
+      ...globalSkills().map((s) => s.name),
+    ]
+    props.onDenyAllSkills(allSkillNames)
   }
 
   const handlePluginToggle = (name: string, enabled: boolean) => {
@@ -269,6 +278,9 @@ export default function ConfigViewer(props: Props) {
                 <span>Skills</span>
                 <span class="count">{workspaceSkills().length + globalSkills().length}</span>
               </div>
+              <button class="button button-small button-ghost" onClick={(e) => { e.stopPropagation(); handleDenyAllSkills() }}>
+                Deny All
+              </button>
             </div>
             <Show when={skillsExpanded()}>
               <Show when={workspaceSkills().length > 0}>

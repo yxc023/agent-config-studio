@@ -145,6 +145,22 @@ function App() {
     }
   }
 
+  async function handleDenyAllSkills(skillNames: string[]) {
+    const ws = selectedWorkspace()
+    if (!ws?.configPath) return
+    try {
+      for (const name of skillNames) {
+        await window.api.configUpdateSkillPermission(ws.configPath, name, "deny")
+      }
+      await loadWorkspaceConfig(ws)
+      setToast("Config saved")
+      setTimeout(() => setToast(null), 2000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to deny all skills")
+      setTimeout(() => setError(null), 3000)
+    }
+  }
+
   async function handleTogglePlugin(pluginName: string, enabled: boolean) {
     const ws = selectedWorkspace()
     if (!ws?.configPath) return
@@ -307,6 +323,7 @@ function App() {
               pluginsDiscovery={pluginsDiscovery()}
               onToggleAgent={handleToggleAgent}
               onUpdateSkillPermission={handleUpdateSkillPermission}
+              onDenyAllSkills={handleDenyAllSkills}
               onTogglePlugin={handleTogglePlugin}
               onOpenInEditor={handleOpenInEditor}
             />
