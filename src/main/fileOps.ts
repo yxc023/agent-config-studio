@@ -2,7 +2,7 @@ import { readFile, writeFile, readdir, mkdir, rm, rename, copyFile, access } fro
 import { join, basename } from "node:path"
 import { parse as parseJsonc, printParseErrorCode, type ParseError } from "jsonc-parser"
 import { editJsonc } from "./jsonc"
-import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS } from "./constants"
+import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS, GLOBAL_SKILL_DIRS } from "./constants"
 
 export interface Workspace {
   id: string
@@ -125,12 +125,22 @@ export async function readGlobalConfig(): Promise<ConfigData | null> {
   }
 }
 
-export async function discoverSkills(basePath: string): Promise<string[]> {
+export async function discoverSkills(basePath: string, skillDirs?: string[]): Promise<string[]> {
+  const skills: Set<string> = new Set()
+  const dirsToScan = skillDirs || SKILL_SEARCH_DIRS.map((d) => join(basePath, d))
+
+  for (const fullPath of dirsToScan) {
+    await scanForSkills(fullPath, skills)
+  }
+
+  return Array.from(skills).sort()
+}
+
+export async function discoverGlobalSkills(): Promise<string[]> {
   const skills: Set<string> = new Set()
 
-  for (const skillDir of SKILL_SEARCH_DIRS) {
-    const fullPath = join(basePath, skillDir)
-    await scanForSkills(fullPath, skills)
+  for (const skillPath of GLOBAL_SKILL_DIRS) {
+    await scanForSkills(skillPath, skills)
   }
 
   return Array.from(skills).sort()

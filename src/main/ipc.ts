@@ -17,6 +17,7 @@ import {
   copyConfigToProfile,
   readGlobalConfig,
   discoverSkills,
+  discoverGlobalSkills,
   discoverAgents,
   discoverPlugins,
   type Workspace,
@@ -151,7 +152,7 @@ export function registerIpcHandlers() {
 
   ipcMain.handle("skills-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
     const workspaceSkills = await discoverSkills(workspacePath)
-    const globalSkills = await discoverSkills(GLOBAL_CONFIG_DIR)
+    const globalSkills = await discoverGlobalSkills()
     return {
       workspace: workspaceSkills,
       global: globalSkills.filter((s) => !workspaceSkills.includes(s)),
