@@ -1,7 +1,7 @@
 import type { Configuration } from "electron-builder"
 
 const getBase = (): Configuration => ({
-  artifactName: "opencode-workspace-config-manager-${os}-${arch}.${ext}",
+  artifactName: "agent-config-studio-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
@@ -24,8 +24,8 @@ function getConfig() {
   const base = getBase()
   return {
     ...base,
-    appId: "ai.opencode.workspace-config-manager",
-    productName: "OpenCode Workspace Config Manager",
+    appId: "ai.agentconfigstudio",
+    productName: "Agent Config Studio",
   }
 }
 
