@@ -58,7 +58,7 @@ const CardGrid: Component<CardGridProps> = (props) => {
             <GroupedSection
               title={directory}
               items={agents}
-              renderItem={(agent) => (
+              renderItem={(agent: AgentItem) => (
                 <div style={{ width: "280px", "flex-shrink": 0 }}>
                   <AgentCard
                     agent={agent}
@@ -78,7 +78,7 @@ const CardGrid: Component<CardGridProps> = (props) => {
             <GroupedSection
               title={directory}
               items={skills}
-              renderItem={(skill) => (
+              renderItem={(skill: SkillItem) => (
                 <div style={{ width: "280px", "flex-shrink": 0 }}>
                   <SkillCard
                     skill={skill}
