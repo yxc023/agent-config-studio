@@ -20,6 +20,12 @@ export const GLOBAL_SKILL_DIRS = [
   join(homedir(), ".agents", "skills"),
 ]
 
+export const GLOBAL_AGENT_DIRS = [
+  join(homedir(), ".config", "opencode", "agents"),
+  join(homedir(), ".claude", "agents"),
+  join(homedir(), ".agents", "agents"),
+]
+
 export const SKILL_SEARCH_DIRS = [".opencode/skills", ".claude/skills", ".agents/skills"]
 
 export const AGENT_SEARCH_DIRS = [".opencode/agents", ".claude/agents", ".agents/agents"]

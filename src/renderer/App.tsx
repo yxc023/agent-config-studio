@@ -123,7 +123,7 @@ function App() {
     const globalSkillPerms = globalCfg?.permission?.skill as Record<string, SkillPermission> | undefined
 
     const workspaceSkills = (skillsDiscovery()?.workspace || []).map((item) => {
-      const perm = skillPerms?.[item.fullPath] || "deny"
+      const perm = skillPerms?.[item.name] || "deny"
       return {
         name: item.name,
         fullPath: item.fullPath,
@@ -135,7 +135,7 @@ function App() {
     })
 
     const globalSkills = (skillsDiscovery()?.global || []).map((item) => {
-      const perm = globalSkillPerms?.[item.fullPath] || "deny"
+      const perm = globalSkillPerms?.[item.name] || "deny"
       return {
         name: item.name,
         fullPath: item.fullPath,
@@ -298,7 +298,7 @@ function App() {
     }
   }
 
-  async function handleSkillToggle(fullPath: string) {
+  async function handleSkillToggle(name: string) {
     const cfg = workspaceConfig()
     const skillPerms = cfg?.permission?.skill as Record<string, SkillPermission> | undefined
     const globalCfg = globalConfig()
@@ -306,22 +306,22 @@ function App() {
 
     const ws = selectedWorkspace()
     const discovery = skillsDiscovery()
-    const isGlobalSkill = discovery?.global.some((s) => s.fullPath === fullPath) ?? false
+    const isGlobalSkill = discovery?.global.some((s) => s.name === name) ?? false
 
     const currentPerm = isGlobalSkill
-      ? (globalSkillPerms?.[fullPath] || "deny")
-      : (skillPerms?.[fullPath] || "deny")
+      ? (globalSkillPerms?.[name] || "deny")
+      : (skillPerms?.[name] || "deny")
 
     const newPermission: SkillPermission = currentPerm === "allow" ? "deny" : "allow"
 
     try {
       if (isGlobalSkill) {
-        await window.api.globalConfigUpdateSkillPermission(fullPath, newPermission)
+        await window.api.globalConfigUpdateSkillPermission(name, newPermission)
         const global = await window.api.globalConfigRead()
         setGlobalConfig(global)
       } else {
         if (!ws?.configPath) return
-        await window.api.configUpdateSkillPermission(ws.configPath, fullPath, newPermission)
+        await window.api.configUpdateSkillPermission(ws.configPath, name, newPermission)
         await loadWorkspaceConfig(ws)
       }
     } catch (err) {

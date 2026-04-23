@@ -3,7 +3,7 @@ import { join, basename, relative, sep } from "node:path"
 import { parse as parseJsonc, printParseErrorCode, type ParseError } from "jsonc-parser"
 import * as YAML from "yaml"
 import { editJsonc } from "./jsonc"
-import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS, GLOBAL_SKILL_DIRS } from "./constants"
+import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS, GLOBAL_SKILL_DIRS, GLOBAL_AGENT_DIRS } from "./constants"
 import type { AgentsDiscovery, SkillsDiscovery, DiscoveredItem } from "../preload/types"
 
 export interface Workspace {
@@ -186,8 +186,7 @@ export async function discoverAgents(basePath: string): Promise<AgentsDiscovery>
     await scanDir(fullPath, fullPath, false)
   }
 
-  for (const agentPath of AGENT_SEARCH_DIRS) {
-    const globalPath = join(GLOBAL_CONFIG_DIR, agentPath)
+  for (const globalPath of GLOBAL_AGENT_DIRS) {
     await scanDir(globalPath, globalPath, true)
   }
 
@@ -287,7 +286,7 @@ export async function initializeNewProjectSkills(workspacePath: string): Promise
   ]
 
   for (const skill of allSkills) {
-    perm.skill[skill.fullPath] = 'allow'
+    perm.skill[skill.name] = 'allow'
   }
 
   await writeConfig(configPath, config)
