@@ -280,16 +280,33 @@ export async function initializeNewProjectSkills(workspacePath: string): Promise
 
   perm.skill['*'] = 'deny'
 
-  const allSkills = [
-    ...skills.workspace,
-    ...globalSkills.global.filter(s => !skills.workspace.some(w => w.fullPath === s.fullPath))
-  ]
-
-  for (const skill of allSkills) {
+  for (const skill of skills.workspace) {
     perm.skill[skill.name] = 'allow'
   }
 
   await writeConfig(configPath, config)
+
+  const globalConfigPath = getGlobalConfigPath()
+  let globalConfig: ConfigData
+  try {
+    globalConfig = await readConfig(globalConfigPath)
+  } catch {
+    globalConfig = {}
+  }
+
+  if (!globalConfig.permission) {
+    globalConfig.permission = {}
+  }
+  const globalPerm = globalConfig.permission as Record<string, Record<string, unknown>>
+  if (!globalPerm.skill) {
+    globalPerm.skill = {}
+  }
+
+  for (const skill of globalSkills.global) {
+    globalPerm.skill[skill.name] = 'allow'
+  }
+
+  await writeGlobalConfig(globalConfig)
 }
 
 export async function discoverPlugins(basePath: string): Promise<string[]> {
