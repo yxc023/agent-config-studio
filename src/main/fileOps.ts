@@ -257,6 +257,39 @@ export async function discoverGlobalSkills(): Promise<SkillsDiscovery> {
   return result
 }
 
+export async function initializeNewProjectSkills(workspacePath: string): Promise<void> {
+  const skills = await discoverSkills(workspacePath)
+  const globalSkills = await discoverGlobalSkills()
+  const configPath = await findOpencodeConfig(workspacePath)
+
+  if (!configPath) {
+    throw new Error("Workspace has no opencode config")
+  }
+
+  const config = await readConfig(configPath)
+
+  if (!config.permission) {
+    config.permission = {}
+  }
+  const perm = config.permission as Record<string, Record<string, unknown>>
+  if (!perm.skill) {
+    perm.skill = {}
+  }
+
+  perm.skill['*'] = 'deny'
+
+  const allSkills = [
+    ...skills.workspace,
+    ...globalSkills.global.filter(s => !skills.workspace.some(w => w.fullPath === s.fullPath))
+  ]
+
+  for (const skill of allSkills) {
+    perm.skill[skill.fullPath] = 'allow'
+  }
+
+  await writeConfig(configPath, config)
+}
+
 export async function discoverPlugins(basePath: string): Promise<string[]> {
   const plugins: Set<string> = new Set()
 

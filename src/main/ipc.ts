@@ -152,24 +152,30 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle("skills-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
-    const workspaceSkills = await discoverSkills(workspacePath)
+    const skills = await discoverSkills(workspacePath)
     const globalSkills = await discoverGlobalSkills()
     return {
-      workspace: workspaceSkills,
-      global: globalSkills.filter((s) => !workspaceSkills.includes(s)),
+      workspace: skills.workspace,
+      global: globalSkills.global.filter((s) => !skills.workspace.some((w) => w.fullPath === s.fullPath)),
     }
   })
 
   ipcMain.handle("agents-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
-    const workspaceAgents = await discoverAgents(workspacePath)
+    const agents = await discoverAgents(workspacePath)
     const globalAgents = await discoverAgents(GLOBAL_CONFIG_DIR)
     return {
-      workspace: workspaceAgents,
-      global: globalAgents.filter((a) => !workspaceAgents.includes(a)),
+      workspace: agents.workspace,
+      global: globalAgents.global.filter((a) => !agents.workspace.some((w) => w.fullPath === a.fullPath)),
     }
   })
 
-  ipcMain.handle("plugins-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
+  ipcMain.handle("skills-initialize", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
+  const { initializeNewProjectSkills } = await import("./fileOps")
+  await initializeNewProjectSkills(workspacePath)
+  return true
+})
+
+ipcMain.handle("plugins-discover", async (_event: IpcMainInvokeEvent, workspacePath: string) => {
     const workspacePlugins = await discoverPlugins(workspacePath)
     const globalPlugins = await discoverPlugins(GLOBAL_CONFIG_DIR)
     return {
