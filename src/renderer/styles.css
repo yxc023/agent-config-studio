@@ -99,3 +99,43 @@ body {
   max-width: 300px;
   white-space: normal;
 }
+
+.grouped-section {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.section-count {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+.collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.section-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  padding-left: 16px;
+}
