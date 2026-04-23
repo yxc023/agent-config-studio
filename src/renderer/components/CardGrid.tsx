@@ -1,6 +1,6 @@
 import { type Component, For, Show } from "solid-js"
 import type { TabType } from "./TabBar"
-import type { AgentItem, SkillItem } from "../../preload/types"
+import type { AgentItem } from "../../preload/types"
 import AgentCard from "./AgentCard"
 import SkillCard from "./SkillCard"
 import PluginCard from "./PluginCard"
@@ -15,7 +15,7 @@ interface CardGridProps {
   activeTab: TabType
   viewMode: "compact" | "detailed"
   agents: AgentItem[]
-  skills: SkillItem[]
+  skills: { name: string; fullPath: string; permission: "allow" | "deny"; isGlobal: boolean; directory: string; description: string }[]
   plugins: PluginItem[]
   onToggleAgent: (name: string, enabled: boolean, isGlobal: boolean) => void
   onToggleSkill: (fullPath: string) => void
