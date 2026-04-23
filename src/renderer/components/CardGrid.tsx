@@ -1,21 +1,9 @@
 import { type Component, For, Show } from "solid-js"
 import type { TabType } from "./TabBar"
+import type { AgentItem, SkillItem } from "../../preload/types"
 import AgentCard from "./AgentCard"
 import SkillCard from "./SkillCard"
 import PluginCard from "./PluginCard"
-
-interface AgentItem {
-  name: string
-  enabled: boolean
-  isGlobal: boolean
-}
-
-interface SkillItem {
-  name: string
-  permission: "allow" | "deny"
-  ask: boolean
-  isGlobal: boolean
-}
 
 interface PluginItem {
   name: string
@@ -25,12 +13,12 @@ interface PluginItem {
 
 interface CardGridProps {
   activeTab: TabType
+  viewMode: "compact" | "detailed"
   agents: AgentItem[]
   skills: SkillItem[]
   plugins: PluginItem[]
   onToggleAgent: (name: string, enabled: boolean, isGlobal: boolean) => void
-  onUpdateSkillPermission: (name: string, permission: "allow" | "deny", isGlobal: boolean) => void
-  onAskChange: (name: string, ask: boolean, isGlobal: boolean) => void
+  onToggleSkill: (fullPath: string) => void
   onTogglePlugin: (name: string, enabled: boolean, isGlobal: boolean) => void
 }
 
@@ -43,10 +31,9 @@ const CardGrid: Component<CardGridProps> = (props) => {
             {(agent) => (
               <div style={{ width: "280px", "flex-shrink": 0 }}>
                 <AgentCard
-                  name={agent.name}
-                  enabled={agent.enabled}
-                  isGlobal={agent.isGlobal}
-                  onToggle={(name, enabled) => props.onToggleAgent(name, enabled, agent.isGlobal)}
+                  agent={agent}
+                  viewMode={props.viewMode}
+                  onToggle={(fullPath) => props.onToggleAgent(fullPath, agent.enabled, agent.isGlobal)}
                 />
               </div>
             )}
@@ -59,12 +46,9 @@ const CardGrid: Component<CardGridProps> = (props) => {
             {(skill) => (
               <div style={{ width: "280px", "flex-shrink": 0 }}>
                 <SkillCard
-                  name={skill.name}
-                  permission={skill.permission}
-                  ask={skill.ask}
-                  isGlobal={skill.isGlobal}
-                  onPermissionChange={(name, perm) => props.onUpdateSkillPermission(name, perm, skill.isGlobal)}
-                  onAskChange={(name, ask) => props.onAskChange(name, ask, skill.isGlobal)}
+                  skill={skill}
+                  viewMode={props.viewMode}
+                  onToggle={props.onToggleSkill}
                 />
               </div>
             )}

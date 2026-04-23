@@ -139,3 +139,57 @@ body {
   gap: 8px;
   padding-left: 16px;
 }
+
+.skill-card {
+  padding: 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.skill-card.compact {
+  padding: 6px 12px;
+  height: 32px;
+}
+
+.skill-card.detailed {
+  padding: 10px 12px;
+  height: auto;
+}
+
+.agent-card {
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.agent-card.compact {
+  padding: 8px 12px;
+  height: 44px;
+}
+
+.agent-card.detailed {
+  padding: 12px;
+  height: auto;
+}
+
+.tooltip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tooltip-directory {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tooltip-description {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 4px;
+}

@@ -5,7 +5,7 @@ import TabBar, { type TabType } from "./components/TabBar"
 import CardGrid from "./components/CardGrid"
 import TitleBar from "./components/TitleBar"
 import DiffModal from "./components/DiffModal"
-import type { SkillPermission, SkillsDiscovery, AgentsDiscovery, PluginsDiscovery } from "../preload/types"
+import type { SkillPermission, SkillsDiscovery, AgentsDiscovery, PluginsDiscovery, AgentItem } from "../preload/types"
 
 export interface Workspace {
   id: string
@@ -52,58 +52,66 @@ function App() {
   const [error, setError] = createSignal<string | null>(null)
   const [toast, setToast] = createSignal<string | null>(null)
   const [activeTab, setActiveTab] = createSignal<TabType>("agents")
+  const [viewMode, setViewMode] = createSignal<"compact" | "detailed">("detailed")
 
-  const cardAgents = () => {
+  const cardAgents = (): AgentItem[] => {
     const cfg = workspaceConfig()
-    const wsAgentNames = new Set<string>()
-
-    if (cfg?.agent) {
-      Object.keys(cfg.agent).forEach((name) => {
-        if (name !== "build" && name !== "plan") {
-          wsAgentNames.add(name)
-        }
-      })
-    }
-    ;(agentsDiscovery()?.workspace || []).forEach((item) => wsAgentNames.add(item.name))
-
     const globalCfg = globalConfig()
-    const wsConfigAgentNames = new Set<string>()
-    if (cfg?.agent) {
-      Object.keys(cfg.agent).forEach((name) => wsConfigAgentNames.add(name))
-    }
-    ;(agentsDiscovery()?.workspace || []).forEach((item) => wsConfigAgentNames.add(item.name))
 
-    const workspaceAgents = Array.from(wsAgentNames).sort().map((name) => {
-      const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
-      return {
-        name,
+    const wsAgentsMap = new Map<string, AgentItem>()
+    ;(agentsDiscovery()?.workspace || []).forEach((item) => {
+      const agentData = cfg?.agent?.[item.name] as { disable?: boolean } | undefined
+      wsAgentsMap.set(item.name, {
+        name: item.name,
+        fullPath: item.fullPath,
         enabled: agentData?.disable !== true,
         isGlobal: false,
-      }
-    })
-
-    const globalAgentNames = new Set<string>()
-    if (globalCfg?.agent) {
-      Object.keys(globalCfg.agent).forEach((name) => {
-        if (name !== "build" && name !== "plan" && !wsConfigAgentNames.has(name)) {
-          globalAgentNames.add(name)
-        }
+        directory: item.directory,
+        description: item.description,
       })
-    }
-    ;(agentsDiscovery()?.global || []).forEach((item) => {
-      if (!wsConfigAgentNames.has(item.name)) {
-        globalAgentNames.add(item.name)
+    })
+    Object.keys(cfg?.agent || {}).forEach((name) => {
+      if (name !== "build" && name !== "plan" && !wsAgentsMap.has(name)) {
+        wsAgentsMap.set(name, {
+          name,
+          fullPath: "",
+          enabled: (cfg?.agent?.[name] as { disable?: boolean })?.disable !== true,
+          isGlobal: false,
+          directory: "root",
+          description: "",
+        })
       }
     })
 
-    const globalAgents = Array.from(globalAgentNames).sort().map((name) => {
-      const agentData = globalCfg?.agent?.[name] as { disable?: boolean } | undefined
-      return {
-        name,
-        enabled: agentData?.disable !== true,
-        isGlobal: true,
+    const globalAgentsMap = new Map<string, AgentItem>()
+    ;(agentsDiscovery()?.global || []).forEach((item) => {
+      if (!wsAgentsMap.has(item.name)) {
+        const agentData = globalCfg?.agent?.[item.name] as { disable?: boolean } | undefined
+        globalAgentsMap.set(item.name, {
+          name: item.name,
+          fullPath: item.fullPath,
+          enabled: agentData?.disable !== true,
+          isGlobal: true,
+          directory: item.directory,
+          description: item.description,
+        })
       }
     })
+    Object.keys(globalCfg?.agent || {}).forEach((name) => {
+      if (name !== "build" && name !== "plan" && !wsAgentsMap.has(name) && !globalAgentsMap.has(name)) {
+        globalAgentsMap.set(name, {
+          name,
+          fullPath: "",
+          enabled: (globalCfg?.agent?.[name] as { disable?: boolean })?.disable !== true,
+          isGlobal: true,
+          directory: "root",
+          description: "",
+        })
+      }
+    })
+
+    const workspaceAgents = Array.from(wsAgentsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+    const globalAgents = Array.from(globalAgentsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 
     return [...workspaceAgents, ...globalAgents]
   }
@@ -114,27 +122,27 @@ function App() {
     const globalCfg = globalConfig()
     const globalSkillPerms = globalCfg?.permission?.skill as Record<string, SkillPermission> | undefined
 
-    const wsConfigSkillNames = new Set<string>()
-    ;(skillsDiscovery()?.workspace || []).forEach((item) => wsConfigSkillNames.add(item.name))
-    ;(skillsDiscovery()?.global || []).forEach((item) => wsConfigSkillNames.add(item.name))
-
     const workspaceSkills = (skillsDiscovery()?.workspace || []).map((item) => {
-      const perm = skillPerms?.[item.name] || "deny"
+      const perm = skillPerms?.[item.fullPath] || "deny"
       return {
         name: item.name,
+        fullPath: item.fullPath,
         permission: perm === "ask" ? "allow" : perm,
-        ask: perm === "ask",
         isGlobal: false,
+        directory: item.directory,
+        description: item.description,
       }
     })
 
     const globalSkills = (skillsDiscovery()?.global || []).map((item) => {
-      const perm = globalSkillPerms?.[item.name] || "deny"
+      const perm = globalSkillPerms?.[item.fullPath] || "deny"
       return {
         name: item.name,
+        fullPath: item.fullPath,
         permission: perm === "ask" ? "allow" : perm,
-        ask: perm === "ask",
         isGlobal: true,
+        directory: item.directory,
+        description: item.description,
       }
     })
 
@@ -283,9 +291,36 @@ function App() {
     }
   }
 
-  async function handleSkillAskChange(skillName: string, ask: boolean, isGlobal: boolean) {
-    const permission: SkillPermission = ask ? "ask" : "allow"
-    await handleUpdateSkillPermission(skillName, permission, isGlobal)
+  async function handleSkillToggle(fullPath: string) {
+    const cfg = workspaceConfig()
+    const skillPerms = cfg?.permission?.skill as Record<string, SkillPermission> | undefined
+    const globalCfg = globalConfig()
+    const globalSkillPerms = globalCfg?.permission?.skill as Record<string, SkillPermission> | undefined
+
+    const ws = selectedWorkspace()
+    const discovery = skillsDiscovery()
+    const isGlobalSkill = discovery?.global.some((s) => s.fullPath === fullPath) ?? false
+
+    const currentPerm = isGlobalSkill
+      ? (globalSkillPerms?.[fullPath] || "deny")
+      : (skillPerms?.[fullPath] || "deny")
+
+    const newPermission: SkillPermission = currentPerm === "allow" ? "deny" : "allow"
+
+    try {
+      if (isGlobalSkill) {
+        await window.api.globalConfigUpdateSkillPermission(fullPath, newPermission)
+        const global = await window.api.globalConfigRead()
+        setGlobalConfig(global)
+      } else {
+        if (!ws?.configPath) return
+        await window.api.configUpdateSkillPermission(ws.configPath, fullPath, newPermission)
+        await loadWorkspaceConfig(ws)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to toggle skill")
+      setTimeout(() => setError(null), 3000)
+    }
   }
 
   async function handleDenyAllSkills(skillNames: string[]) {
@@ -464,12 +499,12 @@ function App() {
             <TabBar activeTab={activeTab()} onChange={setActiveTab} />
             <CardGrid
               activeTab={activeTab()}
+              viewMode={viewMode()}
               agents={cardAgents()}
               skills={cardSkills()}
               plugins={cardPlugins()}
               onToggleAgent={handleToggleAgent}
-              onUpdateSkillPermission={(name, perm, isGlobal) => handleUpdateSkillPermission(name, perm, isGlobal)}
-              onAskChange={(name, ask, isGlobal) => handleSkillAskChange(name, ask, isGlobal)}
+              onToggleSkill={handleSkillToggle}
               onTogglePlugin={handleTogglePlugin}
             />
           </Show>
