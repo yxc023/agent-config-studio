@@ -477,8 +477,8 @@ function App() {
             <div class="text-xs font-semibold text-[#86868b] uppercase tracking-wider px-3 py-2">Workspaces</div>
             <For each={workspaces()}>
               {(workspace) => (
-                <button
-                  class={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center gap-3 mt-1 transition-colors ${
+                <div
+                  class={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center gap-3 mt-1 transition-colors group ${
                     selectedWorkspace()?.id === workspace.id
                       ? "bg-[#f5f5f7]"
                       : "hover:bg-[#f5f5f7]"
@@ -486,8 +486,19 @@ function App() {
                   onClick={() => handleSelectWorkspace(workspace)}
                 >
                   <span class="text-[#86868b]">📁</span>
-                  <span class="font-medium truncate">{workspace.name}</span>
-                </button>
+                  <span class="font-medium truncate flex-1">{workspace.name}</span>
+                  <button
+                    class="opacity-0 group-hover:opacity-100 text-[#86868b] hover:text-[#ef4444] text-lg font-medium px-1 rounded transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Remove workspace "${workspace.name}"?`)) {
+                        handleRemoveWorkspace(workspace.id)
+                      }
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               )}
             </For>
             <Show when={workspaces().length === 0}>
