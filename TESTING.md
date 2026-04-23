@@ -15,6 +15,61 @@ npm run build
 
 ---
 
+## 测试目录
+
+### test-fixtures/ - 回归测试
+
+用于功能回归测试的预设目录：
+
+```
+test-fixtures/
+├── opencode.jsonc                    # 测试配置
+└── .opencode/
+    ├── agents/
+    │   ├── test-agent.md           # 简单 agent
+    │   └── test-group/
+    │       └── nested-agent.md     # 嵌套 agent（测试多级目录）
+    └── skills/
+        ├── test-skill/
+        │   └── SKILL.md            # 简单 skill
+        └── test-group/
+            └── nested-skill/
+                └── SKILL.md        # 嵌套 skill（测试多级目录）
+```
+
+**使用方法：**
+1. App 中添加 `test-fixtures` 作为 workspace
+2. 验证 skills 和 agents 的显示、切换、分组等功能
+
+### custom-config/ - 自定义配置目录
+
+用于测试 `OPENCODE_CONFIG_DIR` 环境变量功能：
+
+```
+custom-config/
+└── .opencode/
+    ├── agents/
+    │   └── custom-agent.md
+    └── skills/
+        ├── custom-skill/
+        │   └── SKILL.md
+        └── custom-group/
+            └── custom-nested-skill/
+                └── SKILL.md
+```
+
+**使用方法：**
+```bash
+# 使用自定义配置目录运行 opencode
+OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+
+# 验证输出包含
+# - custom-skill
+# - custom-group/custom-nested-skill
+```
+
+---
+
 ## 功能测试清单
 
 ### 1. Workspace 管理
@@ -124,7 +179,7 @@ npm run build
 ```jsonc
 "permission": {
   "skill": {
-    "*": "deny"  // ✅ 存在
+    "*": "deny"  # ✅ 存在
   }
 }
 ```
@@ -149,7 +204,20 @@ opencode run "list skills"
 
 ---
 
-### 8. 边界条件测试
+### 8. OPENCODE_CONFIG_DIR 验证
+
+```bash
+# 列出 custom-config 中的 skills
+OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+
+# 验证输出包含
+# - custom-skill
+# - custom-group/custom-nested-skill
+```
+
+---
+
+### 9. 边界条件测试
 
 **不存在的目录**
 - [ ] 扫描不存在的目录不会报错
@@ -177,6 +245,8 @@ opencode run "list skills"
 6. ✅ 多级目录（嵌套目录）正确发现和分组
 7. ✅ 配置文件中使用 name 而非 fullPath 作为 key
 8. ✅ `*` catch-all 正确设置为 deny
+9. ✅ Global skills/agents 正确发现
+10. ✅ `OPENCODE_CONFIG_DIR` 环境变量正确处理
 
 ---
 
@@ -204,6 +274,38 @@ kill $DEV_PID 2>/dev/null || true
 
 echo "=== 测试完成 ==="
 ```
+
+---
+
+## opencode run 命令验证
+
+### 列出所有 skills
+
+```bash
+cd test-fixtures
+opencode run "list skills"
+```
+
+预期输出应包含：
+- `test-skill`
+- `test-group/nested-skill`
+
+### 列出所有 agents
+
+```bash
+cd test-fixtures
+opencode run "list agents"
+```
+
+### 使用自定义配置目录
+
+```bash
+OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+```
+
+预期输出应包含：
+- `custom-skill`
+- `custom-group/custom-nested-skill`
 
 ---
 

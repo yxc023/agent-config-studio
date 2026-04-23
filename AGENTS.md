@@ -44,3 +44,21 @@ Uses `pnpm` (configured in `packageManager` field). Run `pnpm install` if needed
 - `electron-window-state` - remembers window position/size
 - `jsonc-parser` - parses JSON with comments
 - `solid-js` - UI framework
+
+## Testing
+
+See [TESTING.md](./TESTING.md) for comprehensive testing and verification methods.
+
+### Test Fixtures
+
+Located in `test-fixtures/` directory for regression testing:
+- Skills: `.opencode/skills/` with simple and nested directories
+- Agents: `.opencode/agents/` with simple and nested directories
+- Pre-configured `opencode.jsonc` with test permissions
+
+### Custom Config Directory
+
+Located in `custom-config/` for testing `OPENCODE_CONFIG_DIR` environment variable:
+```bash
+OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+```
