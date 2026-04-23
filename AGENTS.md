@@ -49,16 +49,34 @@ Uses `pnpm` (configured in `packageManager` field). Run `pnpm install` if needed
 
 See [TESTING.md](./TESTING.md) for comprehensive testing and verification methods.
 
-### Test Fixtures
+### Test Directory
 
-Located in `test-fixtures/` directory for regression testing:
-- Skills: `.opencode/skills/` with simple and nested directories
-- Agents: `.opencode/agents/` with simple and nested directories
-- Pre-configured `opencode.jsonc` with test permissions
+Located in `test/` directory for regression testing:
 
-### Custom Config Directory
+```
+test/
+├── test-workspace/              # Workspace 目录（App 添加此目录）
+│   ├── opencode.jsonc           # 测试配置
+│   └── .opencode/
+│       ├── agents/              # 测试 agents
+│       └── skills/              # 测试 skills
+│
+└── opencode-config-global/     # 全局配置目录（测试 OPENCODE_CONFIG_DIR）
+    └── .opencode/
+        ├── agents/
+        └── skills/
+```
 
-Located in `custom-config/` for testing `OPENCODE_CONFIG_DIR` environment variable:
+### 快速验证
+
 ```bash
-OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+npm run verify  # 运行所有验证脚本
+```
+
+### 手动测试
+
+```bash
+# 使用全局配置目录运行 opencode
+cd test/test-workspace
+OPENCODE_CONFIG_DIR=../opencode-config-global opencode run "list skills"
 ```

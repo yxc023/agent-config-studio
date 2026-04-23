@@ -3,11 +3,17 @@
 ## 快速验证命令
 
 ```bash
-# 1. 启动开发服务器
-npm run dev
+# 运行所有验证（推荐）
+npm run verify
 
-# 2. 类型检查
+# 或手动运行
+./scripts/run-all-verification.sh
+
+# 1. 类型检查
 npm run typecheck
+
+# 2. 启动开发服务器
+npm run dev
 
 # 3. 打包构建
 npm run build
@@ -15,58 +21,121 @@ npm run build
 
 ---
 
+## 自动化验证脚本
+
+### 脚本位置
+
+```
+scripts/
+├── run-all-verification.sh       # 一键运行所有验证
+├── verify-config-format.sh      # 验证配置文件格式
+└── verify-opencode-discovery.sh # 验证 opencode CLI 发现能力
+```
+
+### run-all-verification.sh
+
+一键运行所有验证：
+
+```bash
+./scripts/run-all-verification.sh
+```
+
+输出示例：
+
+```
+╔════════════════════════════════════════════════════════════╗
+║  Agent Config Studio - All Verifications                  ║
+╚════════════════════════════════════════════════════════════╝
+
+[1/4] TypeScript Type Check
+[✓] TypeScript types OK
+
+[2/4] Config Format Verification
+[✓] Config format OK
+
+[3/4] OpenCode CLI Discovery
+[✓] OpenCode discovery OK
+
+[4/4] Test Fixtures Integrity
+[✓] All test fixtures present
+
+╔════════════════════════════════════════════════════════════╗
+║  Summary                                                  ║
+╚════════════════════════════════════════════════════════════╝
+[✓] All verifications passed
+```
+
+### verify-config-format.sh
+
+验证 `opencode.jsonc` 配置文件格式：
+
+```bash
+./scripts/verify-config-format.sh
+```
+
+检查项：
+- JSONC 语法正确性
+- 必要字段存在 (`$schema`, `permission.skill`, `permission.agent`)
+- catch-all `*: deny` 设置
+- skills/agents 使用 name 作为 key
+
+### verify-opencode-discovery.sh
+
+验证 opencode CLI 能发现 test-workspace 中的 skills/agents：
+
+```bash
+./scripts/verify-opencode-discovery.sh
+```
+
+使用 `OPENCODE_CONFIG_DIR` 环境变量指定全局配置目录（opencode-config-global），然后调用：
+- `opencode run "list skills"`
+- `opencode agent list`
+
+---
+
 ## 测试目录
 
-### test-fixtures/ - 回归测试
-
-用于功能回归测试的预设目录：
+### test/ - 测试目录
 
 ```
-test-fixtures/
-├── opencode.jsonc                    # 测试配置
-└── .opencode/
-    ├── agents/
-    │   ├── test-agent.md           # 简单 agent
-    │   └── test-group/
-    │       └── nested-agent.md     # 嵌套 agent（测试多级目录）
-    └── skills/
-        ├── test-skill/
-        │   └── SKILL.md            # 简单 skill
-        └── test-group/
-            └── nested-skill/
-                └── SKILL.md        # 嵌套 skill（测试多级目录）
+test/
+├── test-workspace/              # 工作区目录（模拟用户项目）
+│   ├── opencode.jsonc           # 测试配置
+│   └── .opencode/
+│       ├── agents/
+│       │   ├── test-agent.md           # 简单 agent
+│       │   └── test-group/
+│       │       └── nested-agent.md     # 嵌套 agent
+│       └── skills/
+│           ├── test-skill/
+│           │   └── SKILL.md           # 简单 skill
+│           └── test-group/
+│               └── nested-skill/
+│                   └── SKILL.md       # 嵌套 skill
+│
+└── opencode-config-global/     # 全局配置目录（替换 ~/.config/opencode）
+    └── .opencode/
+        ├── agents/
+        │   └── custom-agent.md
+        └── skills/
+            ├── custom-skill/
+            │   └── SKILL.md
+            └── custom-group/
+                └── custom-nested-skill/
+                    └── SKILL.md
 ```
+
+**目录说明：**
+
+| 目录 | 用途 | OPENCODE_CONFIG_DIR |
+|------|------|-------------------|
+| `test-workspace` | 作为工作区目录，App 添加此目录作为 workspace | 不使用 |
+| `opencode-config-global` | 作为全局配置目录，测试 `OPENCODE_CONFIG_DIR` 功能 | 使用 |
 
 **使用方法：**
-1. App 中添加 `test-fixtures` 作为 workspace
+
+1. App 中添加 `test/test-workspace` 作为 workspace
 2. 验证 skills 和 agents 的显示、切换、分组等功能
-
-### custom-config/ - 自定义配置目录
-
-用于测试 `OPENCODE_CONFIG_DIR` 环境变量功能：
-
-```
-custom-config/
-└── .opencode/
-    ├── agents/
-    │   └── custom-agent.md
-    └── skills/
-        ├── custom-skill/
-        │   └── SKILL.md
-        └── custom-group/
-            └── custom-nested-skill/
-                └── SKILL.md
-```
-
-**使用方法：**
-```bash
-# 使用自定义配置目录运行 opencode
-OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
-
-# 验证输出包含
-# - custom-skill
-# - custom-group/custom-nested-skill
-```
 
 ---
 
@@ -76,7 +145,7 @@ OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
 
 - [ ] **添加 Workspace**
   - 点击 "+ Add Workspace"
-  - 选择 `test-fixtures` 目录
+  - 选择 `test/test-workspace` 目录
   - 验证目录被添加到侧边栏
 
 - [ ] **删除 Workspace**
@@ -164,7 +233,7 @@ OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
 
 **验证 skills 配置格式**
 ```bash
-# 打开 test-fixtures/opencode.jsonc
+# 打开 test/test-workspace/opencode.jsonc
 # 验证 skills 使用 name 作为 key（非 fullPath）
 "test-skill": "allow"        # ✅ 正确
 "test-group/nested-skill": "allow"  # ✅ 正确
@@ -188,13 +257,13 @@ OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
 
 ### 7. opencode run 验证
 
-在 `test-fixtures` 目录中运行：
+在 `test/test-workspace` 目录中运行：
 
 ```bash
-cd test-fixtures
+cd test/test-workspace
 
-# 列出 skills
-opencode run "list skills"
+# 使用 opencode-config-global 作为全局配置
+OPENCODE_CONFIG_DIR=../opencode-config-global opencode run "list skills"
 
 # 验证输出包含所有测试 skills
 # 应该显示:
@@ -207,8 +276,8 @@ opencode run "list skills"
 ### 8. OPENCODE_CONFIG_DIR 验证
 
 ```bash
-# 列出 custom-config 中的 skills
-OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
+# 使用 opencode-config-global 作为全局配置目录
+OPENCODE_CONFIG_DIR=./test/opencode-config-global opencode run "list skills"
 
 # 验证输出包含
 # - custom-skill
@@ -250,68 +319,9 @@ OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
 
 ---
 
-## 手动测试脚本
-
-```bash
-#!/bin/bash
-set -e
-
-echo "=== Agent Config Studio 手动测试 ==="
-
-# 启动开发服务器
-echo "1. 启动开发服务器..."
-npm run dev &
-DEV_PID=$!
-sleep 5
-
-echo "2. 等待用户测试..."
-
-# 等待用户按 Enter 结束
-read -p "测试完成后按 Enter 继续..."
-
-# 清理
-kill $DEV_PID 2>/dev/null || true
-
-echo "=== 测试完成 ==="
-```
-
----
-
-## opencode run 命令验证
-
-### 列出所有 skills
-
-```bash
-cd test-fixtures
-opencode run "list skills"
-```
-
-预期输出应包含：
-- `test-skill`
-- `test-group/nested-skill`
-
-### 列出所有 agents
-
-```bash
-cd test-fixtures
-opencode run "list agents"
-```
-
-### 使用自定义配置目录
-
-```bash
-OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
-```
-
-预期输出应包含：
-- `custom-skill`
-- `custom-group/custom-nested-skill`
-
----
-
 ## 预期配置文件示例
 
-**test-fixtures/opencode.jsonc**
+**test/test-workspace/opencode.jsonc**
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
@@ -332,3 +342,19 @@ OPENCODE_CONFIG_DIR=./custom-config opencode run "list skills"
   }
 }
 ```
+
+---
+
+## npm verify 命令
+
+在 `package.json` 中添加了 `verify` 脚本：
+
+```json
+{
+  "scripts": {
+    "verify": "bash scripts/run-all-verification.sh"
+  }
+}
+```
+
+运行 `npm run verify` 等同于直接运行 `./scripts/run-all-verification.sh`
