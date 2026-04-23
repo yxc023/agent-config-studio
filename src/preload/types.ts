@@ -79,6 +79,7 @@ export interface ElectronAPI {
 
   globalConfigRead: () => Promise<ConfigData | null>
   skillsDiscover: (workspacePath: string) => Promise<SkillsDiscovery>
+  skillsInitialize: (workspacePath: string) => Promise<void>
   agentsDiscover: (workspacePath: string) => Promise<AgentsDiscovery>
   pluginsDiscover: (workspacePath: string) => Promise<PluginsDiscovery>
   workspaceInitialize: (workspacePath: string) => Promise<{ configPath: string; config: ConfigData }>

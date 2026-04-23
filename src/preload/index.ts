@@ -16,6 +16,7 @@ const api: ElectronAPI = {
 
   globalConfigRead: () => ipcRenderer.invoke("global-config-read"),
   skillsDiscover: (workspacePath: string) => ipcRenderer.invoke("skills-discover", workspacePath),
+  skillsInitialize: (workspacePath: string) => ipcRenderer.invoke("skills-initialize", workspacePath),
   agentsDiscover: (workspacePath: string) => ipcRenderer.invoke("agents-discover", workspacePath),
   pluginsDiscover: (workspacePath: string) => ipcRenderer.invoke("plugins-discover", workspacePath),
   workspaceInitialize: (workspacePath: string) => ipcRenderer.invoke("workspace-initialize", workspacePath),

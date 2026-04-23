@@ -253,6 +253,13 @@ function App() {
     setSelectedWorkspace(workspace)
     setSelectedProfile(null)
     await loadWorkspaceData(workspace)
+
+    try {
+      await window.api.skillsInitialize(workspace.path)
+      await loadWorkspaceData(workspace)
+    } catch (err) {
+      console.error("Failed to initialize skills:", err)
+    }
   }
 
   async function handleToggleAgent(agentName: string, enabled: boolean, isGlobal: boolean) {
@@ -503,9 +510,10 @@ function App() {
               agents={cardAgents()}
               skills={cardSkills()}
               plugins={cardPlugins()}
-              onToggleAgent={handleToggleAgent}
+              onToggleAgent={(name) => handleToggleAgent(name, cardAgents().find(a => a.fullPath === name)?.enabled ?? false, cardAgents().find(a => a.fullPath === name)?.isGlobal ?? false)}
               onToggleSkill={handleSkillToggle}
               onTogglePlugin={handleTogglePlugin}
+              onViewModeChange={setViewMode}
             />
           </Show>
           <Show when={!selectedWorkspace()}>
