@@ -24,14 +24,39 @@ export interface MergePreview {
   diff: string[]
 }
 
-export interface SkillsDiscovery {
-  workspace: string[]
-  global: string[]
+export interface DiscoveredItem {
+  name: string
+  fullPath: string
+  directory: string
+  description: string
 }
 
 export interface AgentsDiscovery {
-  workspace: string[]
-  global: string[]
+  workspace: DiscoveredItem[]
+  global: DiscoveredItem[]
+}
+
+export interface SkillsDiscovery {
+  workspace: DiscoveredItem[]
+  global: DiscoveredItem[]
+}
+
+export interface AgentItem {
+  name: string
+  fullPath: string
+  enabled: boolean
+  isGlobal: boolean
+  directory: string
+  description: string
+}
+
+export interface SkillItem {
+  name: string
+  fullPath: string
+  permission: "allow" | "deny"
+  isGlobal: boolean
+  directory: string
+  description: string
 }
 
 export interface PluginsDiscovery {

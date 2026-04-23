@@ -1,8 +1,10 @@
 import { readFile, writeFile, readdir, mkdir, rm, rename, copyFile, access } from "node:fs/promises"
-import { join, basename } from "node:path"
+import { join, basename, relative, sep } from "node:path"
 import { parse as parseJsonc, printParseErrorCode, type ParseError } from "jsonc-parser"
+import * as YAML from "yaml"
 import { editJsonc } from "./jsonc"
 import { GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, SKILL_SEARCH_DIRS, AGENT_SEARCH_DIRS, PLUGIN_SEARCH_DIRS, GLOBAL_SKILL_DIRS } from "./constants"
+import type { AgentsDiscovery, SkillsDiscovery, DiscoveredItem } from "../preload/types"
 
 export interface Workspace {
   id: string
@@ -131,68 +133,128 @@ export async function writeGlobalConfig(data: ConfigData): Promise<void> {
   await writeConfig(configPath, data)
 }
 
-export async function discoverSkills(basePath: string, skillDirs?: string[]): Promise<string[]> {
-  const skills: Set<string> = new Set()
-  const dirsToScan = skillDirs || SKILL_SEARCH_DIRS.map((d) => join(basePath, d))
-
-  for (const fullPath of dirsToScan) {
-    await scanForSkills(fullPath, skills)
-  }
-
-  return Array.from(skills).sort()
-}
-
-export async function discoverGlobalSkills(): Promise<string[]> {
-  const skills: Set<string> = new Set()
-
-  for (const skillPath of GLOBAL_SKILL_DIRS) {
-    await scanForSkills(skillPath, skills)
-  }
-
-  return Array.from(skills).sort()
-}
-
-async function scanForSkills(dirPath: string, skills: Set<string>): Promise<void> {
+async function readFrontmatterDescription(filePath: string): Promise<string> {
   try {
-    const entries = await readdir(dirPath, { withFileTypes: true })
+    const content = await readFile(filePath, "utf-8")
+    const match = content.match(/^---\n([\s\S]*?)\n---/)
+    if (!match) return ""
+        const parsed = YAML.parse(match[1]) as Record<string, unknown>
+    return (parsed.description as string) || ""
+  } catch {
+    return ""
+  }
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function discoverAgents(basePath: string): Promise<AgentsDiscovery> {
+  const result: AgentsDiscovery = { workspace: [], global: [] }
+
+  async function scanDir(dir: string, base: string, isGlobal: boolean): Promise<void> {
+    const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
+      const fullPath = join(dir, entry.name)
       if (entry.isDirectory()) {
-        const skillPath = join(dirPath, entry.name, "SKILL.md")
-        try {
-          await access(skillPath)
-          skills.add(entry.name)
-        } catch {
-          // SKILL.md not found in this directory
+        await scanDir(fullPath, base, isGlobal)
+      } else if (entry.name === "SKILL.md" || entry.name.endsWith(".md")) {
+        const relPath = relative(base, fullPath).replace(/\.md$/, "")
+        const parts = relPath.split(sep)
+        const name = parts.pop()!
+        const directory = parts.join(sep) || "root"
+        const description = await readFrontmatterDescription(fullPath)
+
+        const item: DiscoveredItem = { name, fullPath: relPath, directory, description }
+        if (isGlobal) {
+          result.global.push(item)
+        } else {
+          result.workspace.push(item)
         }
       }
     }
-  } catch {
-    // Directory doesn't exist, skip
   }
-}
-
-export async function discoverAgents(basePath: string): Promise<string[]> {
-  const agents: Set<string> = new Set()
 
   for (const agentDir of AGENT_SEARCH_DIRS) {
     const fullPath = join(basePath, agentDir)
-    await scanForAgents(fullPath, agents)
+    await scanDir(fullPath, fullPath, false)
   }
 
-  return Array.from(agents).sort()
+  for (const agentPath of AGENT_SEARCH_DIRS) {
+    const globalPath = join(GLOBAL_CONFIG_DIR, agentPath)
+    await scanDir(globalPath, globalPath, true)
+  }
+
+  return result
 }
 
-async function scanForAgents(dirPath: string, agents: Set<string>): Promise<void> {
-  try {
-    const entries = await readdir(dirPath, { withFileTypes: true })
+export async function discoverSkills(basePath: string): Promise<SkillsDiscovery> {
+  const result: SkillsDiscovery = { workspace: [], global: [] }
+
+  async function scanDir(dir: string, base: string, isGlobal: boolean): Promise<void> {
+    const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith(".md")) {
-        agents.add(entry.name.replace(/\.md$/, ""))
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        const skillMdPath = join(fullPath, "SKILL.md")
+        if (await fileExists(skillMdPath)) {
+          const relPath = relative(base, fullPath)
+          const parts = relPath.split(sep)
+          const name = parts.pop()!
+          const directory = parts.join(sep) || "root"
+          const description = await readFrontmatterDescription(skillMdPath)
+
+          const item: DiscoveredItem = { name, fullPath: relPath, directory, description }
+          if (isGlobal) {
+            result.global.push(item)
+          } else {
+            result.workspace.push(item)
+          }
+        } else {
+          await scanDir(fullPath, base, isGlobal)
+        }
       }
     }
-  } catch {
-    // Directory doesn't exist, skip
   }
+
+  await scanDir(basePath, basePath, false)
+  return result
+}
+
+export async function discoverGlobalSkills(): Promise<SkillsDiscovery> {
+  const result: SkillsDiscovery = { workspace: [], global: [] }
+
+  async function scanDir(dir: string, base: string): Promise<void> {
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        const skillMdPath = join(fullPath, "SKILL.md")
+        if (await fileExists(skillMdPath)) {
+          const relPath = relative(base, fullPath)
+          const parts = relPath.split(sep)
+          const name = parts.pop()!
+          const directory = parts.join(sep) || "root"
+          const description = await readFrontmatterDescription(skillMdPath)
+
+          const item: DiscoveredItem = { name, fullPath: relPath, directory, description }
+          result.global.push(item)
+        } else {
+          await scanDir(fullPath, base)
+        }
+      }
+    }
+  }
+
+  for (const skillPath of GLOBAL_SKILL_DIRS) {
+    await scanDir(skillPath, skillPath)
+  }
+  return result
 }
 
 export async function discoverPlugins(basePath: string): Promise<string[]> {

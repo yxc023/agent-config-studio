@@ -52,7 +52,7 @@ export default function ConfigViewer(props: Props) {
       })
     }
 
-    ;(props.agentsDiscovery?.workspace || []).forEach((name) => agentNames.add(name))
+    ;(props.agentsDiscovery?.workspace || []).forEach((item) => agentNames.add(item.name))
 
     return Array.from(agentNames).sort().map((name) => {
       const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
@@ -72,7 +72,7 @@ export default function ConfigViewer(props: Props) {
     if (props.workspaceConfig?.agent) {
       Object.keys(props.workspaceConfig.agent).forEach((name) => wsAgentNames.add(name))
     }
-    ;(props.agentsDiscovery?.workspace || []).forEach((name) => wsAgentNames.add(name))
+    ;(props.agentsDiscovery?.workspace || []).forEach((item) => wsAgentNames.add(item.name))
 
     const agentNames = new Set<string>()
 
@@ -84,9 +84,9 @@ export default function ConfigViewer(props: Props) {
       })
     }
 
-    ;(props.agentsDiscovery?.global || []).forEach((name) => {
-      if (!wsAgentNames.has(name)) {
-        agentNames.add(name)
+    ;(props.agentsDiscovery?.global || []).forEach((item) => {
+      if (!wsAgentNames.has(item.name)) {
+        agentNames.add(item.name)
       }
     })
 
@@ -105,12 +105,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.workspaceConfig
     const skillNames = props.skillsDiscovery?.workspace || []
     if (!cfg?.permission?.skill) {
-      return skillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: false }))
+      return skillNames.map((item) => ({ name: item.name, permission: "deny" as SkillPermission, isGlobal: false }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
-    return skillNames.map((name) => ({
-      name,
-      permission: skillPerms[name] || "deny",
+    return skillNames.map((item) => ({
+      name: item.name,
+      permission: skillPerms[item.name] || "deny",
       isGlobal: false,
     }))
   }
@@ -119,12 +119,12 @@ export default function ConfigViewer(props: Props) {
     const cfg = props.globalConfig
     const globalSkillNames = props.skillsDiscovery?.global || []
     if (!cfg?.permission?.skill) {
-      return globalSkillNames.map((name) => ({ name, permission: "deny" as SkillPermission, isGlobal: true }))
+      return globalSkillNames.map((item) => ({ name: item.name, permission: "deny" as SkillPermission, isGlobal: true }))
     }
     const skillPerms = cfg.permission.skill as Record<string, SkillPermission>
-    return globalSkillNames.map((name) => ({
-      name,
-      permission: skillPerms[name] || "deny",
+    return globalSkillNames.map((item) => ({
+      name: item.name,
+      permission: skillPerms[item.name] || "deny",
       isGlobal: true,
     }))
   }

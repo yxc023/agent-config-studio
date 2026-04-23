@@ -64,14 +64,14 @@ function App() {
         }
       })
     }
-    ;(agentsDiscovery()?.workspace || []).forEach((name) => wsAgentNames.add(name))
+    ;(agentsDiscovery()?.workspace || []).forEach((item) => wsAgentNames.add(item.name))
 
     const globalCfg = globalConfig()
     const wsConfigAgentNames = new Set<string>()
     if (cfg?.agent) {
       Object.keys(cfg.agent).forEach((name) => wsConfigAgentNames.add(name))
     }
-    ;(agentsDiscovery()?.workspace || []).forEach((name) => wsConfigAgentNames.add(name))
+    ;(agentsDiscovery()?.workspace || []).forEach((item) => wsConfigAgentNames.add(item.name))
 
     const workspaceAgents = Array.from(wsAgentNames).sort().map((name) => {
       const agentData = cfg?.agent?.[name] as { disable?: boolean } | undefined
@@ -90,9 +90,9 @@ function App() {
         }
       })
     }
-    ;(agentsDiscovery()?.global || []).forEach((name) => {
-      if (!wsConfigAgentNames.has(name)) {
-        globalAgentNames.add(name)
+    ;(agentsDiscovery()?.global || []).forEach((item) => {
+      if (!wsConfigAgentNames.has(item.name)) {
+        globalAgentNames.add(item.name)
       }
     })
 
@@ -115,23 +115,23 @@ function App() {
     const globalSkillPerms = globalCfg?.permission?.skill as Record<string, SkillPermission> | undefined
 
     const wsConfigSkillNames = new Set<string>()
-    ;(skillsDiscovery()?.workspace || []).forEach((name) => wsConfigSkillNames.add(name))
-    ;(skillsDiscovery()?.global || []).forEach((name) => wsConfigSkillNames.add(name))
+    ;(skillsDiscovery()?.workspace || []).forEach((item) => wsConfigSkillNames.add(item.name))
+    ;(skillsDiscovery()?.global || []).forEach((item) => wsConfigSkillNames.add(item.name))
 
-    const workspaceSkills = (skillsDiscovery()?.workspace || []).map((name) => {
-      const perm = skillPerms?.[name] || "deny"
+    const workspaceSkills = (skillsDiscovery()?.workspace || []).map((item) => {
+      const perm = skillPerms?.[item.name] || "deny"
       return {
-        name,
+        name: item.name,
         permission: perm === "ask" ? "allow" : perm,
         ask: perm === "ask",
         isGlobal: false,
       }
     })
 
-    const globalSkills = (skillsDiscovery()?.global || []).map((name) => {
-      const perm = globalSkillPerms?.[name] || "deny"
+    const globalSkills = (skillsDiscovery()?.global || []).map((item) => {
+      const perm = globalSkillPerms?.[item.name] || "deny"
       return {
-        name,
+        name: item.name,
         permission: perm === "ask" ? "allow" : perm,
         ask: perm === "ask",
         isGlobal: true,
