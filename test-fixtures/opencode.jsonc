@@ -4,7 +4,8 @@
     "skill": {
       "*": "deny",
       "test-skill": "allow",
-      "test-group/nested-skill": "allow"
+      "test-group/nested-skill": "allow",
+      "nested-skill": "allow"
     }
   },
   "agent": {
