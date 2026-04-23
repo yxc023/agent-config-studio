@@ -158,6 +158,7 @@ export async function discoverAgents(basePath: string): Promise<AgentsDiscovery>
   const result: AgentsDiscovery = { workspace: [], global: [] }
 
   async function scanDir(dir: string, base: string, isGlobal: boolean): Promise<void> {
+    if (!await fileExists(dir)) return
     const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = join(dir, entry.name)
@@ -197,6 +198,7 @@ export async function discoverSkills(basePath: string): Promise<SkillsDiscovery>
   const result: SkillsDiscovery = { workspace: [], global: [] }
 
   async function scanDir(dir: string, base: string, isGlobal: boolean): Promise<void> {
+    if (!await fileExists(dir)) return
     const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = join(dir, entry.name)
@@ -230,6 +232,7 @@ export async function discoverGlobalSkills(): Promise<SkillsDiscovery> {
   const result: SkillsDiscovery = { workspace: [], global: [] }
 
   async function scanDir(dir: string, base: string): Promise<void> {
+    if (!await fileExists(dir)) return
     const entries = await readdir(dir, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = join(dir, entry.name)
